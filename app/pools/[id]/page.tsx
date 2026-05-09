@@ -3,10 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDate, timeUntil, isPredictionOpen, lockAtMs } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
+import { getPoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
 import { signOut } from "../../login/actions";
 import { saveAllPredictions } from "./actions";
+import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./payments-actions";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -53,6 +55,15 @@ type RawMember = {
 
 type PointRow = { user_id: string; points: number };
 
+type Payment = {
+  id: string;
+  payer_id: string;
+  payee_id: string;
+  proof_url: string;
+  uploaded_at: string;
+  validated_at: string | null;
+};
+
 type Filter = "all" | "open" | "live" | "done";
 
 export default async function PoolDetailPage({
@@ -79,7 +90,7 @@ export default async function PoolDetailPage({
     .single();
   if (poolErr || !pool) notFound();
 
-  const [{ data: members }, { data: matches }, { data: ownPreds }, { data: allPoints }] =
+  const [{ data: members }, { data: matches }, { data: ownPreds }, { data: allPoints }, { data: payments }] =
     await Promise.all([
       supabase
         .from("pool_members")
@@ -98,7 +109,14 @@ export default async function PoolDetailPage({
         .from("predictions")
         .select("user_id, points")
         .eq("pool_id", id),
+      supabase
+        .from("payments")
+        .select("id, payer_id, payee_id, proof_url, uploaded_at, validated_at")
+        .eq("pool_id", id),
     ]);
+
+  // Detectar ganador (si la fase de grupos terminó)
+  const winner = await getPoolWinner(supabase, id);
 
   const matchList = (matches ?? []) as Match[];
   const predMap = new Map<string, Prediction>(
@@ -228,6 +246,17 @@ export default async function PoolDetailPage({
         {/* Layout principal: main + sidebar (sticky en lg+) */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <main className="min-w-0 space-y-6">
+            {/* Pagos (cuando termina la fase de grupos) */}
+            {winner && (
+              <PaymentsSection
+                poolId={id}
+                winner={winner}
+                currentUserId={user.id}
+                memberRows={memberRows}
+                payments={(payments ?? []) as Payment[]}
+              />
+            )}
+
             {/* KPI strip */}
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Stat
@@ -438,6 +467,221 @@ export default async function PoolDetailPage({
 }
 
 /* ───────────────────── Componentes auxiliares ───────────────────── */
+
+/* ───────────────────── PaymentsSection ───────────────────── */
+
+function PaymentsSection({
+  poolId,
+  winner,
+  currentUserId,
+  memberRows,
+  payments,
+}: {
+  poolId: string;
+  winner: { user_id: string; display_name: string; total: number; exactos: number };
+  currentUserId: string;
+  memberRows: { user_id: string; display_name: string }[];
+  payments: Payment[];
+}) {
+  const isWinner = winner.user_id === currentUserId;
+  const myPayment = payments.find(p => p.payer_id === currentUserId);
+
+  return (
+    <section className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-emerald-500/5 p-5">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">🏆</span>
+        <div>
+          <h2 className="font-semibold tracking-tight">Fase de grupos terminada</h2>
+          <p className="text-sm text-slate-300">
+            Ganador: <span className="font-semibold text-amber-400">{winner.display_name}</span>
+            <span className="text-slate-500"> · {winner.total} pts · {winner.exactos} exactos</span>
+            {isWinner && <span className="ml-2 text-xs rounded bg-amber-500/20 px-1.5 py-0.5 text-amber-400">tú</span>}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        {isWinner
+          ? <WinnerView poolId={poolId} memberRows={memberRows} payments={payments} winnerId={winner.user_id} />
+          : <PayerView poolId={poolId} winnerName={winner.display_name} myPayment={myPayment} />}
+      </div>
+    </section>
+  );
+}
+
+function WinnerView({
+  poolId,
+  memberRows,
+  payments,
+  winnerId,
+}: {
+  poolId: string;
+  memberRows: { user_id: string; display_name: string }[];
+  payments: Payment[];
+  winnerId: string;
+}) {
+  const others = memberRows.filter(m => m.user_id !== winnerId);
+  const paymentsByPayer = new Map(payments.map(p => [p.payer_id, p]));
+  const validated = others.filter(m => paymentsByPayer.get(m.user_id)?.validated_at).length;
+
+  return (
+    <div>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          Cobros pendientes
+        </h3>
+        <span className="text-xs text-slate-500">
+          {validated} / {others.length} validados
+        </span>
+      </div>
+      <ul className="space-y-2">
+        {others.map(m => {
+          const p = paymentsByPayer.get(m.user_id);
+          return (
+            <li
+              key={m.user_id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">{m.display_name}</div>
+                <div className="text-xs text-slate-400">
+                  {!p && <span>Sin subir comprobante</span>}
+                  {p && !p.validated_at && (
+                    <span className="text-amber-400">Esperando tu validación</span>
+                  )}
+                  {p?.validated_at && (
+                    <span className="text-emerald-400">
+                      Validado · {new Date(p.validated_at).toLocaleDateString("es-MX")}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {p && (
+                <a
+                  href={p.proof_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0"
+                  title="Click para ver el comprobante"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.proof_url}
+                    alt="comprobante"
+                    className="h-12 w-12 rounded-md border border-slate-700 object-cover hover:opacity-80 transition"
+                  />
+                </a>
+              )}
+
+              {p && !p.validated_at && (
+                <form action={validatePayment}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <button
+                    type="submit"
+                    className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95"
+                  >
+                    Validar
+                  </button>
+                </form>
+              )}
+              {p?.validated_at && (
+                <form action={unvalidatePayment}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <button
+                    type="submit"
+                    className="text-xs text-amber-400 hover:text-amber-300"
+                  >
+                    revertir
+                  </button>
+                </form>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function PayerView({
+  poolId,
+  winnerName,
+  myPayment,
+}: {
+  poolId: string;
+  winnerName: string;
+  myPayment?: Payment;
+}) {
+  const validated = !!myPayment?.validated_at;
+  const uploaded = !!myPayment;
+
+  return (
+    <div>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+        Tu pago a {winnerName}
+      </h3>
+
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-sm">
+            Estado:{" "}
+            {validated && <span className="text-emerald-400 font-semibold">✓ Validado</span>}
+            {!validated && uploaded && <span className="text-amber-400">En revisión</span>}
+            {!uploaded && <span className="text-slate-400">Sin subir</span>}
+          </div>
+          {myPayment && (
+            <a
+              href={myPayment.proof_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Ver mi comprobante"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={myPayment.proof_url}
+                alt="mi comprobante"
+                className="h-16 w-16 rounded-md border border-slate-700 object-cover hover:opacity-80 transition"
+              />
+            </a>
+          )}
+        </div>
+
+        {!validated && (
+          <form action={uploadPaymentProof} className="space-y-3">
+            <input type="hidden" name="pool_id" value={poolId} />
+            <input
+              type="file"
+              name="proof"
+              accept="image/*"
+              required
+              className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer cursor-pointer"
+            />
+            <p className="text-xs text-slate-500">
+              Imagen JPG/PNG/WebP, máximo 5MB. Subir reemplaza el comprobante anterior y resetea la validación.
+            </p>
+            <button
+              type="submit"
+              className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95"
+            >
+              {uploaded ? "Reemplazar comprobante" : "Subir comprobante"}
+            </button>
+          </form>
+        )}
+
+        {validated && (
+          <p className="text-xs text-slate-400">
+            Tu pago fue validado el{" "}
+            {new Date(myPayment!.validated_at!).toLocaleDateString("es-MX", {
+              day: "2-digit", month: "long", year: "numeric",
+            })}
+            . ¡Gracias!
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Chevron({ size = 16 }: { size?: number }) {
   return (
