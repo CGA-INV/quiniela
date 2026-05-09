@@ -1,0 +1,733 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { fmtDate, timeUntil, isPredictionOpen, lockAtMs } from "@/lib/time";
+import { buildStandings, type StandingRow } from "@/lib/standings";
+import { Flag } from "@/components/Flag";
+import { isAdminEmail } from "@/lib/auth";
+import { signOut } from "../../login/actions";
+import { saveAllPredictions } from "./actions";
+
+const STAGE_LABEL: Record<string, string> = {
+  group: "Grupos",
+  round_of_32: "Treintaidosavos",
+  round_of_16: "Octavos",
+  quarter: "Cuartos",
+  semi: "Semi",
+  third_place: "Tercer puesto",
+  final: "Final",
+};
+
+const STAGE_ORDER = [
+  "group", "round_of_32", "round_of_16",
+  "quarter", "semi", "third_place", "final",
+];
+
+type Match = {
+  id: string;
+  stage: keyof typeof STAGE_LABEL;
+  group_label: string | null;
+  home_team: string;
+  away_team: string;
+  kickoff_at: string;
+  home_score: number | null;
+  away_score: number | null;
+  finished: boolean;
+  venue: string | null;
+  city: string | null;
+  match_no: number | null;
+};
+
+type Prediction = {
+  match_id: string;
+  pred_home: number;
+  pred_away: number;
+  points: number;
+};
+
+type RawMember = {
+  user_id: string;
+  profiles: { display_name: string } | { display_name: string }[] | null;
+};
+
+type PointRow = { user_id: string; points: number };
+
+type Filter = "all" | "open" | "live" | "done";
+
+export default async function PoolDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; f?: string }>;
+}) {
+  const { id } = await params;
+  const { error, ok, f } = await searchParams;
+  const filter: Filter = (f === "open" || f === "live" || f === "done") ? f : "all";
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const admin = isAdminEmail(user.email);
+
+  const { data: pool, error: poolErr } = await supabase
+    .from("pools")
+    .select("id, name, invite_code")
+    .eq("id", id)
+    .single();
+  if (poolErr || !pool) notFound();
+
+  const [{ data: members }, { data: matches }, { data: ownPreds }, { data: allPoints }] =
+    await Promise.all([
+      supabase
+        .from("pool_members")
+        .select("user_id, profiles(display_name)")
+        .eq("pool_id", id),
+      supabase
+        .from("matches")
+        .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no")
+        .order("kickoff_at", { ascending: true }),
+      supabase
+        .from("predictions")
+        .select("match_id, pred_home, pred_away, points")
+        .eq("user_id", user.id)
+        .eq("pool_id", id),
+      supabase
+        .from("predictions")
+        .select("user_id, points")
+        .eq("pool_id", id),
+    ]);
+
+  const matchList = (matches ?? []) as Match[];
+  const predMap = new Map<string, Prediction>(
+    ((ownPreds ?? []) as Prediction[]).map(p => [p.match_id, p]),
+  );
+
+  // Members + ranking
+  const rawMembers = (members ?? []) as unknown as RawMember[];
+  const memberRows = rawMembers.map(m => ({
+    user_id: m.user_id,
+    display_name: Array.isArray(m.profiles)
+      ? (m.profiles[0]?.display_name ?? "—")
+      : (m.profiles?.display_name ?? "—"),
+  }));
+
+  const statsByUser = new Map<string, { total: number; exactos: number; ganador: number }>();
+  for (const r of (allPoints ?? []) as PointRow[]) {
+    const cur = statsByUser.get(r.user_id) ?? { total: 0, exactos: 0, ganador: 0 };
+    cur.total += r.points ?? 0;
+    if (r.points === 3) cur.exactos++;
+    else if (r.points === 1) cur.ganador++;
+    statsByUser.set(r.user_id, cur);
+  }
+  const ranking = memberRows
+    .map(m => ({
+      ...m,
+      ...(statsByUser.get(m.user_id) ?? { total: 0, exactos: 0, ganador: 0 }),
+    }))
+    .sort((a, b) => b.total - a.total || a.display_name.localeCompare(b.display_name));
+
+  const myStats = statsByUser.get(user.id) ?? { total: 0, exactos: 0, ganador: 0 };
+  const myRank = ranking.findIndex(r => r.user_id === user.id) + 1;
+
+  // Standings y "hot groups"
+  const standings = buildStandings(matchList);
+  const groupLabels = Array.from(standings.keys()).sort();
+
+  const now = Date.now();
+  const liveMatches = matchList.filter(
+    m => new Date(m.kickoff_at).getTime() <= now && !m.finished,
+  );
+  const hotGroups = new Set(
+    liveMatches.map(m => m.group_label).filter((g): g is string => !!g),
+  );
+
+  // Counts y filtros de partidos
+  const counts = matchList.reduce(
+    (acc, m) => {
+      const open = isPredictionOpen(m.kickoff_at, now);
+      if (open) acc.open++;
+      else if (!m.finished) acc.live++;
+      else acc.done++;
+      acc.all++;
+      return acc;
+    },
+    { all: 0, open: 0, live: 0, done: 0 },
+  );
+
+  const filteredMatches = matchList.filter(m => {
+    const open = isPredictionOpen(m.kickoff_at, now);
+    if (filter === "open") return open;
+    if (filter === "live") return !open && !m.finished;
+    if (filter === "done") return m.finished;
+    return true;
+  });
+
+  // Próximo partido para predecir
+  const nextOpen = matchList.find(m => isPredictionOpen(m.kickoff_at, now));
+  const visibleOpenMatches = filteredMatches.filter(
+    m => isPredictionOpen(m.kickoff_at, now),
+  ).length;
+
+  return (
+    <main className="min-h-dvh bg-slate-950 text-slate-100">
+      {/* Header sticky con backdrop blur */}
+      <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/pools" className="text-sm text-slate-400 hover:text-slate-100 transition">
+              ←
+            </Link>
+            <h1 className="truncate text-base sm:text-lg font-semibold tracking-tight">
+              {pool.name}
+            </h1>
+            <span className="hidden sm:inline rounded-md bg-slate-800/70 px-2 py-0.5 font-mono text-xs text-slate-300">
+              {pool.invite_code}
+            </span>
+            <span className="hidden md:inline text-xs text-slate-500">
+              · {memberRows.length} {memberRows.length === 1 ? "miembro" : "miembros"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            {admin && (
+              <Link
+                href="/admin"
+                className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition"
+              >
+                Admin
+              </Link>
+            )}
+            <form action={signOut}>
+              <button className="rounded-md px-2 py-1.5 text-xs text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition">
+                Salir
+              </button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+            {decodeURIComponent(error)}
+          </div>
+        )}
+        {ok && (
+          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
+            {decodeURIComponent(ok)}
+          </div>
+        )}
+
+        {/* Layout principal: main + sidebar (sticky en lg+) */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <main className="min-w-0 space-y-6">
+            {/* KPI strip */}
+            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Stat
+                label="Tu posición"
+                value={myRank > 0 ? `#${myRank}` : "—"}
+                sub={`de ${ranking.length}`}
+                accent="emerald"
+              />
+              <Stat
+                label="Tus puntos"
+                value={myStats.total}
+                sub={
+                  myStats.exactos > 0 || myStats.ganador > 0
+                    ? `${myStats.exactos} exactos · ${myStats.ganador} ganador`
+                    : "sin puntos aún"
+                }
+                accent="emerald"
+              />
+              <Stat
+                label="Próximo partido"
+                value={nextOpen ? `${nextOpen.home_team} vs ${nextOpen.away_team}` : "—"}
+                sub={nextOpen ? `cierra ${timeUntil(new Date(lockAtMs(nextOpen.kickoff_at)).toISOString(), now)}` : "no hay próximos"}
+                accent="amber"
+                compact
+              />
+              <Stat
+                label="Por predecir"
+                value={counts.open}
+                sub={counts.open > 0 ? "no te quedes" : "todo al día"}
+                accent={counts.open > 0 ? "amber" : "slate"}
+              />
+            </section>
+
+            {/* Posiciones por grupo - bento */}
+            {groupLabels.length > 0 && (
+              <section>
+                <div className="mb-3 flex items-baseline justify-between">
+                  <h2 className="text-lg font-semibold tracking-tight">Posiciones por grupo</h2>
+                  <span className="text-xs text-slate-500">
+                    {groupLabels.length} {groupLabels.length === 1 ? "grupo" : "grupos"}
+                  </span>
+                </div>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr">
+                  {groupLabels.map(g => (
+                    <GroupCard
+                      key={g}
+                      label={g}
+                      rows={standings.get(g)!}
+                      hot={hotGroups.has(g)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Filtros */}
+            {matchList.length > 0 && (
+              <section>
+                <div className="mb-3 flex items-baseline justify-between">
+                  <h2 className="text-lg font-semibold tracking-tight">Partidos</h2>
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-1 text-sm">
+                  <FilterTab poolId={id} active={filter} value="all" label="Todos" count={counts.all} />
+                  <FilterTab poolId={id} active={filter} value="open" label="Abiertos" count={counts.open} />
+                  <FilterTab poolId={id} active={filter} value="live" label="En juego" count={counts.live} />
+                  <FilterTab poolId={id} active={filter} value="done" label="Finalizados" count={counts.done} />
+                </div>
+
+                <form action={saveAllPredictions}>
+                  <input type="hidden" name="pool_id" value={id} />
+
+                  {visibleOpenMatches > 0 && (
+                    <div className="mb-4 flex items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
+                      <p className="text-sm">
+                        <span className="font-semibold text-emerald-400">
+                          {visibleOpenMatches}
+                        </span>{" "}
+                        <span className="text-slate-400">
+                          {visibleOpenMatches === 1 ? "partido abierto" : "partidos abiertos"}
+                        </span>
+                      </p>
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95"
+                      >
+                        Guardar todo
+                      </button>
+                    </div>
+                  )}
+
+                  {filteredMatches.length === 0 ? (
+                    <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-sm text-slate-400">
+                      No hay partidos en esta categoría.
+                    </p>
+                  ) : (
+                    <ByStageGrid
+                      matches={filteredMatches}
+                      predMap={predMap}
+                      poolId={id}
+                      now={now}
+                    />
+                  )}
+
+                  {visibleOpenMatches > 0 && (
+                    <div className="mt-6 flex justify-end">
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-emerald-500 px-5 py-2.5 font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95"
+                      >
+                        Guardar todo
+                      </button>
+                    </div>
+                  )}
+                </form>
+              </section>
+            )}
+          </main>
+
+          {/* Sidebar ranking - sticky en lg+ */}
+          <aside className="lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
+              <div className="flex items-baseline justify-between">
+                <h2 className="font-semibold tracking-tight">Ranking</h2>
+                <span className="text-xs text-slate-500">
+                  {ranking.length} {ranking.length === 1 ? "jugador" : "jugadores"}
+                </span>
+              </div>
+
+              {ranking.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-400">Sin miembros todavía.</p>
+              ) : (
+                <ol className="mt-4 space-y-1">
+                  {ranking.map((r, i) => {
+                    const isMe = r.user_id === user.id;
+                    return (
+                      <li
+                        key={r.user_id}
+                        className={[
+                          "rounded-lg px-2 py-2 transition",
+                          isMe
+                            ? "bg-emerald-500/10 border border-emerald-500/30"
+                            : "border border-transparent hover:bg-slate-800/40",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={[
+                              "w-5 text-right text-xs tabular-nums",
+                              i === 0 ? "text-amber-400 font-semibold"
+                              : i === 1 ? "text-slate-300 font-semibold"
+                              : i === 2 ? "text-orange-400 font-semibold"
+                              : "text-slate-500",
+                            ].join(" ")}>
+                              {i + 1}
+                            </span>
+                            <span className="truncate text-sm">
+                              {r.display_name}
+                              {isMe && <span className="ml-1 text-xs text-emerald-400">(tú)</span>}
+                            </span>
+                          </div>
+                          <span className={[
+                            "font-mono tabular-nums text-sm",
+                            isMe ? "text-emerald-400 font-bold" : "text-slate-300",
+                          ].join(" ")}>
+                            {r.total}
+                          </span>
+                        </div>
+                        {(r.exactos > 0 || r.ganador > 0) && (
+                          <div className="ml-7 mt-0.5 text-xs text-slate-500">
+                            {r.exactos > 0 && (
+                              <span><span className="text-emerald-400 font-medium">{r.exactos}</span> exacto{r.exactos === 1 ? "" : "s"}</span>
+                            )}
+                            {r.exactos > 0 && r.ganador > 0 && " · "}
+                            {r.ganador > 0 && (
+                              <span><span className="text-emerald-300 font-medium">{r.ganador}</span> ganador</span>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+              <p className="mt-4 border-t border-slate-800 pt-3 text-xs text-slate-500">
+                3 pts marcador exacto · 1 pt acertar ganador
+              </p>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ───────────────────── Componentes auxiliares ───────────────────── */
+
+function Stat({
+  label,
+  value,
+  sub,
+  accent = "slate",
+  compact = false,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: "emerald" | "amber" | "slate";
+  compact?: boolean;
+}) {
+  const ringClass =
+    accent === "emerald" ? "ring-emerald-500/20"
+    : accent === "amber" ? "ring-amber-500/20"
+    : "ring-slate-700/50";
+  const valueColor =
+    accent === "emerald" ? "text-emerald-400"
+    : accent === "amber" ? "text-amber-400"
+    : "text-slate-100";
+
+  return (
+    <div className={`rounded-2xl border border-slate-800 bg-slate-900/60 p-5 ring-1 ${ringClass}`}>
+      <div className="text-xs uppercase tracking-wider text-slate-400">{label}</div>
+      <div className={`mt-2 ${compact ? "text-base font-semibold truncate" : "text-3xl font-bold"} tabular-nums ${valueColor}`}>
+        {value}
+      </div>
+      {sub && <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>}
+    </div>
+  );
+}
+
+function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; hot: boolean }) {
+  return (
+    <div className={[
+      "rounded-2xl border bg-slate-900/60 p-4 transition",
+      hot
+        ? "border-emerald-500/40 ring-1 ring-emerald-500/20 lg:col-span-2"
+        : "border-slate-800",
+    ].join(" ")}>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-semibold tracking-tight">Grupo {label}</h3>
+        {hot && (
+          <span className="flex items-center gap-1 text-xs font-medium text-emerald-400">
+            <span className="live-dot inline-block h-2 w-2 rounded-full bg-emerald-400" />
+            EN VIVO
+          </span>
+        )}
+      </div>
+      <table className="w-full text-xs">
+        <thead className="text-slate-500">
+          <tr>
+            <th className="text-left font-normal w-4">#</th>
+            <th className="text-left font-normal">Equipo</th>
+            <th className="text-center font-normal w-6">J</th>
+            <th className="text-center font-normal w-6">G</th>
+            <th className="text-center font-normal w-6">E</th>
+            <th className="text-center font-normal w-6">P</th>
+            <th className="text-center font-normal w-8" title="Diferencia de gol">±</th>
+            <th className="text-right font-normal w-6 text-slate-300">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const cls = i < 2 ? "text-emerald-300" : "text-slate-300";
+            return (
+              <tr key={r.team} className="border-t border-slate-800/50">
+                <td className={`py-1 tabular-nums ${cls}`}>{i + 1}</td>
+                <td className="py-1">
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Flag team={r.team} size={16} />
+                    <span className={`truncate ${cls}`}>{r.team}</span>
+                  </span>
+                </td>
+                <td className="text-center text-slate-400 tabular-nums">{r.played}</td>
+                <td className="text-center text-slate-400 tabular-nums">{r.won}</td>
+                <td className="text-center text-slate-400 tabular-nums">{r.drawn}</td>
+                <td className="text-center text-slate-400 tabular-nums">{r.lost}</td>
+                <td className={`text-center tabular-nums ${r.gd > 0 ? "text-emerald-400" : r.gd < 0 ? "text-red-400" : "text-slate-400"}`}>
+                  {r.gd > 0 ? `+${r.gd}` : r.gd}
+                </td>
+                <td className="text-right font-semibold tabular-nums">{r.pts}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ByStageGrid({
+  matches,
+  predMap,
+  poolId,
+  now,
+}: {
+  matches: Match[];
+  predMap: Map<string, Prediction>;
+  poolId: string;
+  now: number;
+}) {
+  const byStage = new Map<string, Match[]>();
+  for (const m of matches) {
+    if (!byStage.has(m.stage)) byStage.set(m.stage, []);
+    byStage.get(m.stage)!.push(m);
+  }
+  const stagesPresent = STAGE_ORDER.filter(s => byStage.has(s));
+
+  return (
+    <div className="space-y-8">
+      {stagesPresent.map(stage => (
+        <section key={stage}>
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+            {STAGE_LABEL[stage]}
+          </h3>
+          <ul className="grid gap-3 md:grid-cols-2">
+            {byStage.get(stage)!.map(m => (
+              <MatchCard
+                key={m.id}
+                match={m}
+                pred={predMap.get(m.id)}
+                poolId={poolId}
+                now={now}
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function FilterTab({
+  poolId,
+  active,
+  value,
+  label,
+  count,
+}: {
+  poolId: string;
+  active: Filter;
+  value: Filter;
+  label: string;
+  count: number;
+}) {
+  const isActive = active === value;
+  return (
+    <Link
+      href={`/pools/${poolId}${value === "all" ? "" : `?f=${value}`}`}
+      className={[
+        "flex-1 min-w-[6rem] rounded-xl px-3 py-1.5 text-center transition",
+        isActive
+          ? "bg-emerald-500 text-slate-950 font-medium shadow-sm"
+          : "text-slate-300 hover:bg-slate-800/60",
+      ].join(" ")}
+    >
+      {label}{" "}
+      <span className={isActive ? "text-slate-800" : "text-slate-500"}>
+        ({count})
+      </span>
+    </Link>
+  );
+}
+
+function MatchCard({
+  match: m,
+  pred,
+  now,
+  poolId,
+}: {
+  match: Match;
+  pred?: Prediction;
+  now: number;
+  poolId: string;
+}) {
+  const open = isPredictionOpen(m.kickoff_at, now);
+  const lockMs = lockAtMs(m.kickoff_at);
+  const lockIso = new Date(lockMs).toISOString();
+  const kickoffMs = new Date(m.kickoff_at).getTime();
+  const started = now >= kickoffMs;
+  const finished = m.finished && m.home_score !== null && m.away_score !== null;
+  const live = started && !finished;
+  const closingSoon = open && lockMs - now < 60 * 60 * 1000;
+
+  // Layout: live span 2 cols (más prominente)
+  const wrapperClass = [
+    "rounded-2xl border bg-slate-900/60 p-4 transition",
+    live
+      ? "md:col-span-2 border-emerald-500/40 ring-1 ring-emerald-500/20"
+      : finished
+      ? "border-slate-800 hover:border-slate-700"
+      : open
+      ? "border-slate-800 hover:border-emerald-500/30"
+      : "border-slate-800",
+  ].join(" ");
+
+  const inner = (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs uppercase tracking-wider text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-2">
+          {m.match_no && (
+            <span className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-slate-300">
+              #{m.match_no}
+            </span>
+          )}
+          {m.group_label && <span>Grupo {m.group_label}</span>}
+          <span>{fmtDate(m.kickoff_at)}</span>
+          {open && (
+            <span className={`normal-case ${closingSoon ? "text-amber-400 font-semibold" : "text-emerald-400"}`}>
+              cierra {timeUntil(lockIso, now)}
+            </span>
+          )}
+        </div>
+        {finished ? (
+          <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-emerald-400">
+            {m.home_score}–{m.away_score}
+          </span>
+        ) : live ? (
+          <span className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
+            <span className="live-dot inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            EN JUEGO
+          </span>
+        ) : open ? (
+          <span className="text-emerald-400">abierto</span>
+        ) : (
+          <span className="text-slate-400">cerrado</span>
+        )}
+      </div>
+
+      <div className={live ? "mt-4" : "mt-3"}>
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex items-center justify-end gap-2 font-medium text-right flex-1 min-w-0">
+            <span className="truncate">{m.home_team}</span>
+            <Flag team={m.home_team} size={live ? 24 : 20} />
+          </span>
+
+          {open ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <input
+                name={`home_${m.id}`}
+                type="number"
+                min="0"
+                max="20"
+                defaultValue={pred?.pred_home ?? ""}
+                className="w-12 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-center font-mono tabular-nums text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+              <span className="text-slate-500">–</span>
+              <input
+                name={`away_${m.id}`}
+                type="number"
+                min="0"
+                max="20"
+                defaultValue={pred?.pred_away ?? ""}
+                className="w-12 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-center font-mono tabular-nums text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+            </div>
+          ) : (
+            <div className={`flex items-center gap-1.5 font-mono tabular-nums shrink-0 ${live ? "text-3xl" : "text-lg"}`}>
+              <span className={`${live ? "w-14" : "w-12"} rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-center`}>
+                {pred?.pred_home ?? "–"}
+              </span>
+              <span className="text-slate-500">–</span>
+              <span className={`${live ? "w-14" : "w-12"} rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-center`}>
+                {pred?.pred_away ?? "–"}
+              </span>
+            </div>
+          )}
+
+          <span className="flex items-center justify-start gap-2 font-medium text-left flex-1 min-w-0">
+            <Flag team={m.away_team} size={live ? 24 : 20} />
+            <span className="truncate">{m.away_team}</span>
+          </span>
+        </div>
+      </div>
+
+      {(m.venue || m.city) && (
+        <div className="mt-2 text-center text-xs text-slate-500">
+          {m.venue && <>📍 {m.venue}</>}
+          {m.venue && m.city && " · "}
+          {m.city}
+        </div>
+      )}
+
+      {!open && (
+        <div className="mt-2 flex items-center justify-between border-t border-slate-800/60 pt-2 text-xs">
+          <span className="text-slate-500">
+            {pred ? "Ver predicciones de todos →" : "No participaste"}
+          </span>
+          {finished && pred && (
+            <span className={pred.points > 0 ? "text-emerald-400 font-medium" : "text-slate-500"}>
+              {pred.points} {pred.points === 1 ? "pt" : "pts"}
+            </span>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  if (open) {
+    return <li className={wrapperClass}>{inner}</li>;
+  }
+
+  return (
+    <li className="contents">
+      <Link href={`/pools/${poolId}/matches/${m.id}`} className={wrapperClass + " block"}>
+        {inner}
+      </Link>
+    </li>
+  );
+}
