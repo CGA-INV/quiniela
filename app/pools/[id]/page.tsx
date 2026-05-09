@@ -47,6 +47,7 @@ type Prediction = {
 
 type RawMember = {
   user_id: string;
+  is_admin?: boolean;
   profiles: { display_name: string } | { display_name: string }[] | null;
 };
 
@@ -69,7 +70,7 @@ export default async function PoolDetailPage({
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const admin = isAdminEmail(user.email);
+  const isSuper = isAdminEmail(user.email);
 
   const { data: pool, error: poolErr } = await supabase
     .from("pools")
@@ -82,7 +83,7 @@ export default async function PoolDetailPage({
     await Promise.all([
       supabase
         .from("pool_members")
-        .select("user_id, profiles(display_name)")
+        .select("user_id, is_admin, profiles(display_name)")
         .eq("pool_id", id),
       supabase
         .from("matches")
@@ -108,10 +109,15 @@ export default async function PoolDetailPage({
   const rawMembers = (members ?? []) as unknown as RawMember[];
   const memberRows = rawMembers.map(m => ({
     user_id: m.user_id,
+    is_admin: m.is_admin ?? false,
     display_name: Array.isArray(m.profiles)
       ? (m.profiles[0]?.display_name ?? "—")
       : (m.profiles?.display_name ?? "—"),
   }));
+
+  const myMembership = memberRows.find(m => m.user_id === user.id);
+  const isPoolAdmin = myMembership?.is_admin ?? false;
+  const showAdminLink = isSuper || isPoolAdmin;
 
   const statsByUser = new Map<string, { total: number; exactos: number; ganador: number }>();
   for (const r of (allPoints ?? []) as PointRow[]) {
@@ -190,12 +196,12 @@ export default async function PoolDetailPage({
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            {admin && (
+            {showAdminLink && (
               <Link
                 href="/admin"
                 className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition"
               >
-                Admin
+                {isSuper ? "Admin" : "Panel"}
               </Link>
             )}
             <form action={signOut}>

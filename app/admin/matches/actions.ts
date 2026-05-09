@@ -2,16 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/auth";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  if (!isAdminEmail(user.email)) redirect("/pools?error=Acceso%20restringido");
-  return supabase;
-}
+import { requireSuper, requireAnyAdmin } from "@/lib/admin-context";
 
 const STAGES = [
   "group", "round_of_32", "round_of_16",
@@ -47,7 +38,7 @@ export async function createMatch(formData: FormData) {
     redirect("/admin/matches?error=N%C3%BAmero%20de%20partido%20inv%C3%A1lido");
   }
 
-  const supabase = await requireAdmin();
+  const { supabase } = await requireSuper();
   const { error } = await supabase.from("matches").insert({
     stage,
     group_label: groupLabel,
@@ -74,16 +65,20 @@ export async function setMatchResult(formData: FormData) {
     redirect("/admin/matches?error=Marcador%20inv%C3%A1lido");
   }
 
-  const supabase = await requireAdmin();
+  // Pool admin O super admin puede cerrar partidos.
+  const { supabase, isSuper } = await requireAnyAdmin();
 
-  // Bloqueo: si ya está cerrado, rechazar (debe reabrir primero).
   const { data: cur } = await supabase
     .from("matches")
     .select("finished")
     .eq("id", id)
     .single();
-  if (cur?.finished) {
-    redirect("/admin/matches?error=El%20partido%20est%C3%A1%20cerrado.%20Reab%C3%ADrelo%20primero%20si%20necesitas%20cambiar%20el%20resultado.");
+
+  // Pool admin no puede tocar partidos ya cerrados; super admin sí.
+  if (cur?.finished && !isSuper) {
+    redirect(
+      "/admin/matches?error=Solo%20el%20super%20admin%20puede%20modificar%20partidos%20cerrados",
+    );
   }
 
   const { error } = await supabase
@@ -106,7 +101,7 @@ export async function reopenMatch(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/admin/matches?error=ID%20requerido");
 
-  const supabase = await requireAdmin();
+  const { supabase } = await requireSuper();
   const { error } = await supabase
     .from("matches")
     .update({ finished: false, updated_at: new Date().toISOString() })
@@ -197,7 +192,7 @@ export async function importMatches(formData: FormData) {
     redirect("/admin/matches?error=El%20JSON%20debe%20ser%20un%20array%20de%20partidos");
   }
 
-  const supabase = await requireAdmin();
+  const { supabase } = await requireSuper();
 
   const validRows: ImportRow[] = [];
   const errors: string[] = [];
@@ -246,7 +241,7 @@ export async function deleteMatch(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/admin/matches?error=ID%20requerido");
 
-  const supabase = await requireAdmin();
+  const { supabase } = await requireSuper();
   const { error } = await supabase.from("matches").delete().eq("id", id);
   if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
 

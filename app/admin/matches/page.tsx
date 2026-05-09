@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/auth";
+import { getAdminContext } from "@/lib/admin-context";
 import { fmtDate, timeUntil } from "@/lib/time";
 import { Flag } from "@/components/Flag";
 import { createMatch, setMatchResult, reopenMatch, deleteMatch, importMatches } from "./actions";
@@ -60,10 +60,10 @@ export default async function AdminMatchesPage({
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
   const { error, ok } = await searchParams;
+  const ctx = await getAdminContext();
+  if (ctx.role === "none") redirect("/pools?error=Acceso%20restringido");
+  const isSuper = ctx.role === "super";
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  if (!isAdminEmail(user.email)) redirect("/pools?error=Acceso%20restringido");
 
   const [{ data: matches }, { data: preds }] = await Promise.all([
     supabase
@@ -106,6 +106,14 @@ export default async function AdminMatchesPage({
           </p>
         )}
 
+        {!isSuper && (
+          <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm text-emerald-300">
+            Como admin de sala puedes <strong>cerrar partidos</strong> con su resultado.
+            No puedes reabrir, modificar resultados ya cerrados, ni eliminar partidos.
+          </div>
+        )}
+
+        {isSuper && (
         <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-5">
           <h2 className="font-semibold">Agregar partido</h2>
           <form action={createMatch} className="mt-4 grid gap-3 md:grid-cols-2">
@@ -170,7 +178,9 @@ export default async function AdminMatchesPage({
             </button>
           </form>
         </section>
+        )}
 
+        {isSuper && (
         <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-5">
           <details>
             <summary className="cursor-pointer font-semibold">
@@ -214,6 +224,7 @@ export default async function AdminMatchesPage({
             </form>
           </details>
         </section>
+        )}
 
         <section className="mt-6">
           <h2 className="text-xl font-semibold">Calendario ({matchList.length})</h2>
@@ -276,12 +287,16 @@ export default async function AdminMatchesPage({
 
                     <div className="mt-3 flex items-end justify-between gap-3 flex-wrap">
                       {m.finished ? (
-                        <form action={reopenMatch}>
-                          <input type="hidden" name="id" value={m.id} />
-                          <button className="text-xs text-amber-400 hover:text-amber-300 underline decoration-dotted">
-                            Reabrir partido
-                          </button>
-                        </form>
+                        isSuper ? (
+                          <form action={reopenMatch}>
+                            <input type="hidden" name="id" value={m.id} />
+                            <button className="text-xs text-amber-400 hover:text-amber-300 underline decoration-dotted">
+                              Reabrir partido
+                            </button>
+                          </form>
+                        ) : (
+                          <span className="text-xs text-slate-500 italic">cerrado</span>
+                        )
                       ) : (
                         <form action={setMatchResult} className="flex items-end gap-2">
                           <input type="hidden" name="id" value={m.id} />
@@ -312,12 +327,14 @@ export default async function AdminMatchesPage({
                           </button>
                         </form>
                       )}
-                      <form action={deleteMatch}>
-                        <input type="hidden" name="id" value={m.id} />
-                        <button className="text-xs text-red-400 hover:text-red-300">
-                          eliminar
-                        </button>
-                      </form>
+                      {isSuper && (
+                        <form action={deleteMatch}>
+                          <input type="hidden" name="id" value={m.id} />
+                          <button className="text-xs text-red-400 hover:text-red-300">
+                            eliminar
+                          </button>
+                        </form>
+                      )}
                     </div>
                   </li>
                 );
