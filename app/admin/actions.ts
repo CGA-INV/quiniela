@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireSuper, requireAdminForPool } from "@/lib/admin-context";
+import { requireSuper, requireAdminForPool, requireAnyAdmin } from "@/lib/admin-context";
 import { logActivity } from "@/lib/activity";
 
 function generateCode(len = 6): string {
@@ -15,12 +15,12 @@ function generateCode(len = 6): string {
   return out;
 }
 
-/** Crear una nueva sala — SOLO super admin. */
+/** Crear una nueva sala — super admin O pool admin (que se vuelve admin de la nueva sala). */
 export async function createPool(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) redirect("/admin?error=Nombre%20requerido");
 
-  const { supabase, user } = await requireSuper();
+  const { supabase, user, isSuper } = await requireAnyAdmin();
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateCode();
@@ -31,9 +31,13 @@ export async function createPool(formData: FormData) {
       .single();
 
     if (!error && pool) {
+      // El creador queda como miembro y como admin de su nueva sala
+      // (super admin no necesita is_admin porque ya es global; lo marcamos
+      // igual por consistencia visual).
       await supabase.from("pool_members").insert({
         pool_id: pool.id,
         user_id: user.id,
+        is_admin: isSuper ? false : true,
       });
       await logActivity(supabase, user.id, "pool_created", {
         pool_id: pool.id,
@@ -49,6 +53,47 @@ export async function createPool(formData: FormData) {
     }
   }
   redirect("/admin?error=No%20se%20pudo%20generar%20c%C3%B3digo");
+}
+
+/** Agrega directamente un usuario existente a una sala (sin invitación). */
+export async function addExistingMember(formData: FormData) {
+  const poolId = String(formData.get("pool_id") ?? "");
+  const userId = String(formData.get("user_id") ?? "");
+  if (!poolId || !userId) redirect("/admin?error=Datos%20incompletos");
+
+  const { supabase, user } = await requireAdminForPool(poolId);
+
+  const [{ data: poolRow }, { data: targetProfile }] = await Promise.all([
+    supabase.from("pools").select("name").eq("id", poolId).maybeSingle(),
+    supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
+  ]);
+
+  const { error } = await supabase
+    .from("pool_members")
+    .insert({ pool_id: poolId, user_id: userId, is_admin: false });
+
+  if (error) {
+    // Si ya existe (constraint pk), avisamos amigable.
+    const msg = error.message.toLowerCase().includes("duplicate") || error.code === "23505"
+      ? "Esa persona ya es miembro de la sala"
+      : error.message;
+    redirect(`/admin?error=${encodeURIComponent(msg)}`);
+  }
+
+  await logActivity(supabase, user.id, "invite_created", {
+    pool_id: poolId,
+    pool_name: poolRow?.name ?? "—",
+    code: "(directo)",
+    note: `Agregado directamente: ${targetProfile?.display_name ?? "—"}`,
+    direct_add_target: userId,
+  });
+
+  revalidatePath("/admin");
+  redirect(
+    `/admin?ok=${encodeURIComponent(
+      `${targetProfile?.display_name ?? "Usuario"} agregado a ${poolRow?.name ?? "la sala"}`,
+    )}`,
+  );
 }
 
 /** Generar código de invitación — super O admin de esta sala. */

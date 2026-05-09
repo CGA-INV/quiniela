@@ -8,6 +8,7 @@ import {
   generateInvitation,
   revokeInvitation,
   togglePoolAdmin,
+  addExistingMember,
 } from "./actions";
 
 type Pool = {
@@ -89,6 +90,14 @@ export default async function AdminPage({
   const inviteList = (invitations ?? []) as Invitation[];
   const poolName = (id: string) => poolList.find(p => p.id === id)?.name ?? "—";
 
+  // Todos los perfiles registrados (para el dropdown de "agregar miembro existente").
+  // RLS de profiles permite a authenticated leer todos.
+  const { data: allProfiles } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .order("display_name", { ascending: true });
+  const profileList = (allProfiles ?? []) as { id: string; display_name: string }[];
+
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">
       <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md">
@@ -139,10 +148,9 @@ export default async function AdminPage({
           </div>
         )}
 
-        {/* Crear sala (solo super) */}
-        {isSuper && (
-          <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-            <h2 className="font-semibold tracking-tight">Crear nueva sala</h2>
+        {/* Crear sala (super y pool admin) */}
+        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+          <h2 className="font-semibold tracking-tight">Crear nueva sala</h2>
             <form action={createPool} className="mt-4 flex flex-col sm:flex-row gap-3">
               <input
                 name="name"
@@ -155,8 +163,12 @@ export default async function AdminPage({
                 Crear sala
               </button>
             </form>
+            {!isSuper && (
+              <p className="mt-3 text-xs text-slate-500">
+                Como admin de sala, al crear una nueva quedas como su admin automáticamente.
+              </p>
+            )}
           </section>
-        )}
 
         {/* Salas */}
         <section className="mb-6">
@@ -181,6 +193,7 @@ export default async function AdminPage({
                   pool={p}
                   members={membersByPool.get(p.id) ?? []}
                   isSuper={isSuper}
+                  allProfiles={profileList}
                 />
               ))}
             </div>
@@ -250,11 +263,16 @@ function PoolCard({
   pool,
   members,
   isSuper,
+  allProfiles,
 }: {
   pool: Pool;
   members: { user_id: string; display_name: string; is_admin: boolean }[];
   isSuper: boolean;
+  allProfiles: { id: string; display_name: string }[];
 }) {
+  const memberIds = new Set(members.map(m => m.user_id));
+  const candidates = allProfiles.filter(p => !memberIds.has(p.id));
+
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
       <div className="flex items-start justify-between gap-3">
@@ -283,6 +301,26 @@ function PoolCard({
           Generar código
         </button>
       </form>
+
+      {candidates.length > 0 && (
+        <form action={addExistingMember} className="mt-2 flex flex-col sm:flex-row gap-2">
+          <input type="hidden" name="pool_id" value={pool.id} />
+          <select
+            name="user_id"
+            required
+            defaultValue=""
+            className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+          >
+            <option value="" disabled>Agregar usuario existente...</option>
+            {candidates.map(p => (
+              <option key={p.id} value={p.id}>{p.display_name}</option>
+            ))}
+          </select>
+          <button className="rounded-lg border border-emerald-500/40 px-3 py-1.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/10 transition whitespace-nowrap">
+            Agregar
+          </button>
+        </form>
+      )}
 
       <div className="mt-4 border-t border-slate-800 pt-3">
         <h3 className="text-xs uppercase tracking-wider text-slate-400">

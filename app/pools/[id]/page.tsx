@@ -417,9 +417,9 @@ export default async function PoolDetailPage({
                         ].join(" ")}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0 flex-1">
                             <span className={[
-                              "w-5 text-right text-xs tabular-nums",
+                              "shrink-0 w-5 text-right text-xs tabular-nums pt-0.5",
                               i === 0 ? "text-amber-400 font-semibold"
                               : i === 1 ? "text-slate-300 font-semibold"
                               : i === 2 ? "text-orange-400 font-semibold"
@@ -427,7 +427,7 @@ export default async function PoolDetailPage({
                             ].join(" ")}>
                               {i + 1}
                             </span>
-                            <span className="truncate text-sm">
+                            <span className="text-sm break-words">
                               {r.display_name}
                               {isMe && <span className="ml-1 text-xs text-emerald-400">(tú)</span>}
                             </span>
