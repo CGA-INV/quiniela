@@ -25,6 +25,8 @@ export async function createMatch(formData: FormData) {
   const city = nullable(String(formData.get("city") ?? ""));
   const matchNoRaw = String(formData.get("match_no") ?? "").trim();
   const matchNo = matchNoRaw === "" ? null : Number(matchNoRaw);
+  const poolIdRaw = nullable(String(formData.get("pool_id") ?? ""));
+  const poolId = poolIdRaw === "global" || poolIdRaw === "" ? null : poolIdRaw;
 
   if (!STAGES.includes(stage as (typeof STAGES)[number])) {
     redirect("/admin/matches?error=Fase%20inv%C3%A1lida");
@@ -49,6 +51,7 @@ export async function createMatch(formData: FormData) {
     venue,
     city,
     match_no: matchNo,
+    pool_id: poolId,
   });
   if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
 
@@ -196,6 +199,7 @@ type ImportRow = {
   venue: string | null;
   city: string | null;
   match_no: number | null;
+  pool_id: string | null;
 };
 
 function coerceImport(raw: unknown): { row: ImportRow; reason?: string } | { error: string } {
@@ -227,6 +231,11 @@ function coerceImport(raw: unknown): { row: ImportRow; reason?: string } | { err
     matchNo = n;
   }
 
+  const poolIdVal = r.pool_id;
+  const poolId = poolIdVal && typeof poolIdVal === "string" && poolIdVal !== "global"
+    ? poolIdVal
+    : null;
+
   return {
     row: {
       stage,
@@ -237,6 +246,7 @@ function coerceImport(raw: unknown): { row: ImportRow; reason?: string } | { err
       venue,
       city,
       match_no: matchNo,
+      pool_id: poolId,
     },
   };
 }

@@ -18,6 +18,7 @@ function generateCode(len = 6): string {
 /** Crear una nueva sala — super admin O pool admin (que se vuelve admin de la nueva sala). */
 export async function createPool(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
+  const isSandbox = formData.get("is_sandbox") === "on";
   if (!name) redirect("/admin?error=Nombre%20requerido");
 
   const { supabase, user, isSuper } = await requireAnyAdmin();
@@ -26,7 +27,7 @@ export async function createPool(formData: FormData) {
     const code = generateCode();
     const { data: pool, error } = await supabase
       .from("pools")
-      .insert({ name, invite_code: code, owner_id: user.id })
+      .insert({ name, invite_code: code, owner_id: user.id, is_sandbox: isSandbox })
       .select("id")
       .single();
 
@@ -43,9 +44,10 @@ export async function createPool(formData: FormData) {
         pool_id: pool.id,
         pool_name: name,
         invite_code: code,
+        is_sandbox: isSandbox,
       });
       revalidatePath("/admin");
-      redirect(`/admin?ok=Sala%20creada`);
+      redirect(`/admin?ok=Sala%20creada${isSandbox ? "%20(sandbox)" : ""}`);
     }
 
     if (error && !error.message.toLowerCase().includes("invite_code")) {

@@ -20,11 +20,24 @@ export async function getPoolWinner(
   supabase: SupabaseClient,
   poolId: string,
 ): Promise<WinnerInfo | null> {
-  // 1. ¿Está terminada la fase de grupos?
-  const { data: groupMatches } = await supabase
+  // 0. ¿La sala es sandbox? Define el scope de partidos.
+  const { data: poolRow } = await supabase
+    .from("pools")
+    .select("is_sandbox")
+    .eq("id", poolId)
+    .maybeSingle();
+  if (!poolRow) return null;
+  const isSandbox = (poolRow as { is_sandbox: boolean }).is_sandbox;
+
+  // 1. ¿Está terminada la fase de grupos? (filtro por scope)
+  const matchQuery = supabase
     .from("matches")
     .select("finished")
     .eq("stage", "group");
+  const matchQueryScoped = isSandbox
+    ? matchQuery.eq("pool_id", poolId)
+    : matchQuery.is("pool_id", null);
+  const { data: groupMatches } = await matchQueryScoped;
 
   if (!groupMatches || groupMatches.length === 0) return null;
   if ((groupMatches as { finished: boolean }[]).some(m => !m.finished)) return null;

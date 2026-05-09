@@ -151,17 +151,33 @@ export default async function AdminPage({
         {/* Crear sala (super y pool admin) */}
         <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
           <h2 className="font-semibold tracking-tight">Crear nueva sala</h2>
-            <form action={createPool} className="mt-4 flex flex-col sm:flex-row gap-3">
-              <input
-                name="name"
-                required
-                maxLength={60}
-                placeholder="Nombre (ej: La Oficina)"
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-              <button className="rounded-lg bg-emerald-500 px-4 py-2 font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95">
-                Crear sala
-              </button>
+            <form action={createPool} className="mt-4 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  name="name"
+                  required
+                  maxLength={60}
+                  placeholder="Nombre (ej: La Oficina, Pruebas)"
+                  className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+                <button className="rounded-lg bg-emerald-500 px-4 py-2 font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95">
+                  Crear sala
+                </button>
+              </div>
+              <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="is_sandbox"
+                  className="mt-0.5 accent-amber-500"
+                />
+                <span>
+                  <strong className="text-amber-400">Sala de pruebas</strong>{" "}
+                  <span className="text-xs text-slate-500">
+                    — esta sala tendrá su propio calendario de partidos (no comparte con las demás).
+                    Útil para probar el flujo completo sin tocar el calendario real.
+                  </span>
+                </span>
+              </label>
             </form>
             {!isSuper && (
               <p className="mt-3 text-xs text-slate-500">

@@ -85,7 +85,7 @@ export default async function PoolDetailPage({
 
   const { data: pool, error: poolErr } = await supabase
     .from("pools")
-    .select("id, name, invite_code")
+    .select("id, name, invite_code, is_sandbox")
     .eq("id", id)
     .single();
   if (poolErr || !pool) notFound();
@@ -96,10 +96,17 @@ export default async function PoolDetailPage({
         .from("pool_members")
         .select("user_id, is_admin, profiles(display_name)")
         .eq("pool_id", id),
-      supabase
-        .from("matches")
-        .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no")
-        .order("kickoff_at", { ascending: true }),
+      // Sandbox pool: solo ve sus propios partidos. Pool real: solo globales.
+      (pool.is_sandbox
+        ? supabase
+            .from("matches")
+            .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no")
+            .eq("pool_id", id)
+        : supabase
+            .from("matches")
+            .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no")
+            .is("pool_id", null)
+      ).order("kickoff_at", { ascending: true }),
       supabase
         .from("predictions")
         .select("match_id, pred_home, pred_away, points")
@@ -206,6 +213,11 @@ export default async function PoolDetailPage({
             <h1 className="truncate text-base sm:text-lg font-semibold tracking-tight">
               {pool.name}
             </h1>
+            {pool.is_sandbox && (
+              <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-400 ring-1 ring-amber-500/30">
+                🧪 sandbox
+              </span>
+            )}
             <span className="hidden sm:inline rounded-md bg-slate-800/70 px-2 py-0.5 font-mono text-xs text-slate-300">
               {pool.invite_code}
             </span>

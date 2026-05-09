@@ -52,30 +52,76 @@ type Match = {
   venue: string | null;
   city: string | null;
   match_no: number | null;
+  pool_id: string | null;
 };
+
+type SandboxPool = { id: string; name: string };
+
+function ScopeTab({
+  label,
+  value,
+  active,
+  count,
+}: {
+  label: string;
+  value: string;
+  active: string;
+  count: number;
+}) {
+  const isActive = active === value;
+  return (
+    <Link
+      href={value === "all" ? "/admin/matches" : `/admin/matches?scope=${value}`}
+      className={[
+        "rounded-md px-2.5 py-1 transition",
+        isActive
+          ? "bg-emerald-500 text-slate-950 font-medium"
+          : "text-slate-300 hover:bg-slate-800/60",
+      ].join(" ")}
+    >
+      {label} <span className={isActive ? "text-slate-800" : "text-slate-500"}>({count})</span>
+    </Link>
+  );
+}
 
 export default async function AdminMatchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; scope?: string }>;
 }) {
-  const { error, ok } = await searchParams;
+  const { error, ok, scope } = await searchParams;
   const ctx = await getAdminContext();
   if (ctx.role === "none") redirect("/pools?error=Acceso%20restringido");
   const isSuper = ctx.role === "super";
   const supabase = await createClient();
 
-  const [{ data: matches }, { data: preds }] = await Promise.all([
+  const [{ data: matches }, { data: preds }, { data: sandboxPools }] = await Promise.all([
     supabase
       .from("matches")
-      .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no")
+      .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no, pool_id")
       .order("kickoff_at", { ascending: true }),
     supabase
       .from("predictions")
       .select("match_id, user_id"),
+    supabase
+      .from("pools")
+      .select("id, name")
+      .eq("is_sandbox", true)
+      .order("name", { ascending: true }),
   ]);
 
-  const matchList = (matches ?? []) as Match[];
+  const matchListAll = (matches ?? []) as Match[];
+  const sandboxList = (sandboxPools ?? []) as SandboxPool[];
+
+  // Filtrar por scope si viene en query.
+  const activeScope = scope ?? "all";
+  const matchList = matchListAll.filter(m => {
+    if (activeScope === "all") return true;
+    if (activeScope === "global") return m.pool_id === null;
+    return m.pool_id === activeScope;
+  });
+
+  const sandboxName = (id: string) => sandboxList.find(p => p.id === id)?.name ?? "—";
 
   // Cuenta miembros únicos que predijeron por partido (across pools).
   const usersByMatch = new Map<string, Set<string>>();
@@ -173,10 +219,26 @@ export default async function AdminMatchesPage({
               required
               className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none md:col-span-2"
             />
+            <select
+              name="pool_id"
+              defaultValue={sandboxList.length > 0 && activeScope !== "all" && activeScope !== "global" ? activeScope : "global"}
+              className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none md:col-span-2"
+            >
+              <option value="global">📡 Global Mundial (visible en todas las salas reales)</option>
+              {sandboxList.map(p => (
+                <option key={p.id} value={p.id}>🧪 Sandbox: {p.name}</option>
+              ))}
+            </select>
             <button className="rounded-md bg-emerald-500 px-3 py-2 font-medium text-slate-950 hover:bg-emerald-400 transition md:col-span-2">
               Guardar partido
             </button>
           </form>
+          {sandboxList.length === 0 && (
+            <p className="mt-3 text-xs text-slate-500">
+              ¿Querés probar el flujo aislado? Crea una sala con la opción
+              "Sala de pruebas" en /admin y aparecerá acá como destino.
+            </p>
+          )}
         </section>
         )}
 
@@ -227,7 +289,25 @@ export default async function AdminMatchesPage({
         )}
 
         <section className="mt-6">
-          <h2 className="text-xl font-semibold">Calendario ({matchList.length})</h2>
+          <div className="mb-3 flex items-baseline justify-between gap-3 flex-wrap">
+            <h2 className="text-xl font-semibold">Calendario ({matchList.length}{activeScope !== "all" && ` de ${matchListAll.length}`})</h2>
+            {(sandboxList.length > 0 || activeScope !== "all") && (
+              <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-1 text-xs">
+                <ScopeTab label="Todos" value="all" active={activeScope} count={matchListAll.length} />
+                <ScopeTab label="📡 Global" value="global" active={activeScope}
+                  count={matchListAll.filter(m => m.pool_id === null).length} />
+                {sandboxList.map(p => (
+                  <ScopeTab
+                    key={p.id}
+                    label={`🧪 ${p.name}`}
+                    value={p.id}
+                    active={activeScope}
+                    count={matchListAll.filter(m => m.pool_id === p.id).length}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
           {matchList.length === 0 ? (
             <p className="mt-3 text-sm text-slate-400">
               Aún no hay partidos. Agrégalos arriba o pega el seed
@@ -246,6 +326,15 @@ export default async function AdminMatchesPage({
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase tracking-wider text-slate-400">
+                          {m.pool_id ? (
+                            <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-400 normal-case tracking-normal">
+                              🧪 {sandboxName(m.pool_id)}
+                            </span>
+                          ) : (
+                            <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-blue-400 normal-case tracking-normal">
+                              📡 Global
+                            </span>
+                          )}
                           {m.match_no && (
                             <span className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-slate-300">
                               #{m.match_no}
