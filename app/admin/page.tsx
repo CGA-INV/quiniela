@@ -108,12 +108,22 @@ export default async function AdminPage({
               {isSuper ? "Super admin" : "Admin de sala"}
             </span>
           </div>
-          <Link
-            href="/admin/matches"
-            className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition"
-          >
-            Cerrar partidos →
-          </Link>
+          <div className="flex items-center gap-2">
+            {isSuper && (
+              <Link
+                href="/admin/activity"
+                className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 transition"
+              >
+                Bitácora
+              </Link>
+            )}
+            <Link
+              href="/admin/matches"
+              className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition"
+            >
+              Cerrar partidos →
+            </Link>
+          </div>
         </div>
       </header>
 

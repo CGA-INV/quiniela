@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireSuper, requireAdminForPool } from "@/lib/admin-context";
+import { logActivity } from "@/lib/activity";
 
 function generateCode(len = 6): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -34,6 +35,11 @@ export async function createPool(formData: FormData) {
         pool_id: pool.id,
         user_id: user.id,
       });
+      await logActivity(supabase, user.id, "pool_created", {
+        pool_id: pool.id,
+        pool_name: name,
+        invite_code: code,
+      });
       revalidatePath("/admin");
       redirect(`/admin?ok=Sala%20creada`);
     }
@@ -53,6 +59,11 @@ export async function generateInvitation(formData: FormData) {
 
   const { supabase, user } = await requireAdminForPool(poolId);
 
+  // Nombre de la sala para el log (capturado en el momento).
+  const { data: poolRow } = await supabase
+    .from("pools").select("name").eq("id", poolId).maybeSingle();
+  const poolName = poolRow?.name ?? "—";
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateCode(8);
     const { error: insErr } = await supabase.from("invitations").insert({
@@ -62,6 +73,12 @@ export async function generateInvitation(formData: FormData) {
       invited_by: user.id,
     });
     if (!insErr) {
+      await logActivity(supabase, user.id, "invite_created", {
+        pool_id: poolId,
+        pool_name: poolName,
+        code,
+        note,
+      });
       revalidatePath("/admin");
       redirect(`/admin?ok=C%C3%B3digo%20generado:%20${code}`);
     }
@@ -77,20 +94,30 @@ export async function revokeInvitation(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/admin?error=ID%20requerido");
 
-  // Lee el pool_id (la RLS de SELECT permite ver invitations donde uno es admin).
+  // Lee el pool_id + code para el log (la RLS permite si uno es admin de esa sala).
   const supabase = await createClient();
   const { data: inv } = await supabase
     .from("invitations")
-    .select("pool_id")
+    .select("pool_id, code, email")
     .eq("id", id)
     .maybeSingle();
   if (!inv) redirect("/admin?error=Invitaci%C3%B3n%20no%20encontrada");
 
   // Chequeo de rol explícito antes de borrar.
-  await requireAdminForPool(inv.pool_id);
+  const { user } = await requireAdminForPool(inv.pool_id);
+
+  const { data: poolRow } = await supabase
+    .from("pools").select("name").eq("id", inv.pool_id).maybeSingle();
 
   const { error } = await supabase.from("invitations").delete().eq("id", id);
   if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+
+  await logActivity(supabase, user.id, "invite_revoked", {
+    pool_id: inv.pool_id,
+    pool_name: poolRow?.name ?? "—",
+    code: inv.code,
+    note: inv.email,
+  });
 
   revalidatePath("/admin");
   redirect("/admin?ok=Invitaci%C3%B3n%20revocada");
@@ -106,7 +133,12 @@ export async function togglePoolAdmin(formData: FormData) {
     redirect("/admin?error=Datos%20incompletos");
   }
 
-  const { supabase } = await requireSuper();
+  const { supabase, user } = await requireSuper();
+
+  const [{ data: poolRow }, { data: targetProfile }] = await Promise.all([
+    supabase.from("pools").select("name").eq("id", poolId).maybeSingle(),
+    supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
+  ]);
 
   const { error } = await supabase
     .from("pool_members")
@@ -115,6 +147,14 @@ export async function togglePoolAdmin(formData: FormData) {
     .eq("user_id", userId);
 
   if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+
+  await logActivity(supabase, user.id, "admin_toggled", {
+    pool_id: poolId,
+    pool_name: poolRow?.name ?? "—",
+    target_user_id: userId,
+    target_name: targetProfile?.display_name ?? "—",
+    made_admin: makeAdmin,
+  });
 
   revalidatePath("/admin");
   redirect(

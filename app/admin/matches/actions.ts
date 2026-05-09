@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSuper, requireAnyAdmin } from "@/lib/admin-context";
+import { logActivity } from "@/lib/activity";
 
 const STAGES = [
   "group", "round_of_32", "round_of_16",
@@ -66,11 +67,11 @@ export async function setMatchResult(formData: FormData) {
   }
 
   // Pool admin O super admin puede cerrar partidos.
-  const { supabase, isSuper } = await requireAnyAdmin();
+  const { supabase, user, isSuper } = await requireAnyAdmin();
 
   const { data: cur } = await supabase
     .from("matches")
-    .select("finished")
+    .select("finished, home_team, away_team")
     .eq("id", id)
     .single();
 
@@ -93,6 +94,15 @@ export async function setMatchResult(formData: FormData) {
 
   if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
 
+  await logActivity(supabase, user.id, "match_closed", {
+    match_id: id,
+    home_team: cur?.home_team,
+    away_team: cur?.away_team,
+    home_score: homeScore,
+    away_score: awayScore,
+    was_already_closed: cur?.finished ?? false,
+  });
+
   revalidatePath("/admin/matches");
   redirect("/admin/matches?ok=Resultado%20guardado");
 }
@@ -101,13 +111,27 @@ export async function reopenMatch(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/admin/matches?error=ID%20requerido");
 
-  const { supabase } = await requireSuper();
+  const { supabase, user } = await requireSuper();
+
+  const { data: cur } = await supabase
+    .from("matches")
+    .select("home_team, away_team, home_score, away_score")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("matches")
     .update({ finished: false, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
+
+  await logActivity(supabase, user.id, "match_reopened", {
+    match_id: id,
+    home_team: cur?.home_team,
+    away_team: cur?.away_team,
+    previous_score: cur ? `${cur.home_score}–${cur.away_score}` : null,
+  });
 
   revalidatePath("/admin/matches");
   redirect("/admin/matches?ok=Partido%20reabierto.%20Las%20predicciones%20mantienen%20sus%20puntos%20hasta%20que%20cierres%20de%20nuevo.");
@@ -241,9 +265,22 @@ export async function deleteMatch(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/admin/matches?error=ID%20requerido");
 
-  const { supabase } = await requireSuper();
+  const { supabase, user } = await requireSuper();
+
+  const { data: cur } = await supabase
+    .from("matches")
+    .select("home_team, away_team")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.from("matches").delete().eq("id", id);
   if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
+
+  await logActivity(supabase, user.id, "match_deleted", {
+    match_id: id,
+    home_team: cur?.home_team,
+    away_team: cur?.away_team,
+  });
 
   revalidatePath("/admin/matches");
   redirect("/admin/matches?ok=Partido%20eliminado");
