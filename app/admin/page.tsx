@@ -9,6 +9,7 @@ import {
   revokeInvitation,
   togglePoolAdmin,
   addExistingMember,
+  deleteUser,
 } from "./actions";
 
 type Pool = {
@@ -268,6 +269,59 @@ export default async function AdminPage({
             </ul>
           )}
         </section>
+
+        {/* Usuarios registrados — solo super admin puede borrar */}
+        {isSuper && (
+          <section className="mt-8">
+            <details>
+              <summary className="cursor-pointer mb-3 select-none">
+                <h2 className="inline text-lg font-semibold tracking-tight">
+                  Usuarios registrados
+                </h2>
+                <span className="ml-2 text-xs text-slate-500">
+                  ({profileList.length})
+                </span>
+              </summary>
+              <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {profileList.map(p => {
+                  const isMe = p.id === ctx.userId;
+                  return (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm"
+                    >
+                      <span className="truncate">
+                        {p.display_name}
+                        {isMe && <span className="ml-1 text-xs text-amber-400">(tú)</span>}
+                      </span>
+                      {!isMe && (
+                        <details className="shrink-0">
+                          <summary className="text-xs text-slate-500 hover:text-red-400 cursor-pointer select-none">
+                            eliminar
+                          </summary>
+                          <form action={deleteUser} className="mt-1 flex items-center gap-2">
+                            <input type="hidden" name="user_id" value={p.id} />
+                            <button
+                              type="submit"
+                              className="rounded-md bg-red-500/10 border border-red-500/30 px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-500/20 transition"
+                              title="Borra el usuario y todos sus datos. Las salas que creó se mantienen sin owner."
+                            >
+                              Sí, eliminar todo
+                            </button>
+                          </form>
+                        </details>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-3 text-xs text-slate-500">
+                Eliminar borra: predicciones, membresías, pagos, invitaciones generadas y la cuenta entera.
+                Las salas que creó se conservan sin owner.
+              </p>
+            </details>
+          </section>
+        )}
       </div>
     </main>
   );

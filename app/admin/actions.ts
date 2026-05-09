@@ -3,8 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuper, requireAdminForPool, requireAnyAdmin } from "@/lib/admin-context";
 import { logActivity } from "@/lib/activity";
+import { isAdminEmail } from "@/lib/auth";
 
 function generateCode(len = 6): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -168,6 +170,67 @@ export async function revokeInvitation(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin?ok=Invitaci%C3%B3n%20revocada");
+}
+
+/** Borra un usuario completamente del sistema — SOLO super admin. */
+export async function deleteUser(formData: FormData) {
+  const userId = String(formData.get("user_id") ?? "");
+  if (!userId) redirect("/admin?error=ID%20requerido");
+
+  const { supabase, user } = await requireSuper();
+
+  // Protección: nadie puede borrarse a sí mismo
+  if (userId === user.id) {
+    redirect("/admin?error=No%20puedes%20eliminarte%20a%20ti%20mismo");
+  }
+
+  // Capturamos el nombre + email del usuario ANTES de borrarlo (para el log)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  // Doble protección: si es la cuenta del super admin global, no permitir
+  // (verificamos por email en auth.users vía admin client)
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    redirect(
+      `/admin?error=${encodeURIComponent(
+        e instanceof Error ? e.message : "Service role no configurada",
+      )}`,
+    );
+  }
+
+  const { data: targetUser, error: getErr } = await admin.auth.admin.getUserById(userId);
+  if (getErr || !targetUser?.user) {
+    redirect(`/admin?error=${encodeURIComponent("Usuario no encontrado en auth")}`);
+  }
+  if (isAdminEmail(targetUser.user.email)) {
+    redirect("/admin?error=No%20puedes%20eliminar%20la%20cuenta%20del%20super%20admin");
+  }
+
+  const targetEmail = targetUser.user.email;
+
+  // Borra de auth.users → cascade limpia profiles, pool_members, predictions,
+  // payments, activity_log, invitations.
+  const { error: delErr } = await admin.auth.admin.deleteUser(userId);
+  if (delErr) redirect(`/admin?error=${encodeURIComponent(delErr.message)}`);
+
+  await logActivity(supabase, user.id, "user_deleted", {
+    target_user_id: userId,
+    display_name: profile?.display_name ?? "—",
+    email: targetEmail,
+  });
+
+  revalidatePath("/admin");
+  redirect(
+    `/admin?ok=${encodeURIComponent(
+      `Usuario ${profile?.display_name ?? targetEmail ?? ""} eliminado`,
+    )}`,
+  );
 }
 
 /** Promover/demover un miembro como admin de la sala — SOLO super admin. */

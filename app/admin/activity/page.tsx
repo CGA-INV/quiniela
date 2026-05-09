@@ -65,6 +65,7 @@ export default async function ActivityLogPage({
     { value: "invite_revoked", label: "Códigos revocados" },
     { value: "pool_created", label: "Salas creadas" },
     { value: "match_deleted", label: "Partidos eliminados" },
+    { value: "user_deleted", label: "Usuarios eliminados" },
   ];
   const active = filter ?? "all";
 
@@ -165,6 +166,7 @@ function ActionIcon({ action }: { action: string }) {
     match_created:   { color: "bg-blue-500/20 text-blue-400",       symbol: "+" },
     admin_toggled:   { color: "bg-amber-500/20 text-amber-400",     symbol: "⚡" },
     pool_created:    { color: "bg-blue-500/20 text-blue-400",       symbol: "★" },
+    user_deleted:    { color: "bg-red-500/20 text-red-400",         symbol: "✕" },
   };
   const c = map[action] ?? { color: "bg-slate-700/50 text-slate-400", symbol: "·" };
   return (
@@ -196,6 +198,8 @@ function ActionDescription({
     was_already_closed?: boolean;
     previous_score?: string;
     invite_code?: string;
+    display_name?: string;
+    email?: string;
   };
 
   switch (action) {
@@ -270,6 +274,15 @@ function ActionDescription({
           <span className="text-slate-200">{m.target_name}</span>{" "}
           <span className="text-slate-400">en</span>{" "}
           <span className="text-slate-200">{m.pool_name}</span>
+        </p>
+      );
+    case "user_deleted":
+      return (
+        <p className="text-sm">
+          <strong className="text-slate-100">{actor}</strong>{" "}
+          <span className="text-slate-400">eliminó al usuario</span>{" "}
+          <span className="text-slate-200 line-through">{m.display_name}</span>
+          {m.email && <span className="text-slate-500"> · {m.email}</span>}
         </p>
       );
     case "pool_created":
