@@ -45,6 +45,22 @@ body {
   animation: pulse-dot 1.6s ease-in-out infinite;
 }
 
+/* details/summary nativos: quitamos el marcador y rotamos el chevron */
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary .chevron {
+  transition: transform 200ms ease;
+}
+details[open] > summary .chevron {
+  transform: rotate(180deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; }
+  details > summary .chevron { transition: none; }
 }

@@ -261,25 +261,30 @@ export default async function PoolDetailPage({
               />
             </section>
 
-            {/* Posiciones por grupo - bento */}
+            {/* Posiciones por grupo - bento - colapsable */}
             {groupLabels.length > 0 && (
               <section>
-                <div className="mb-3 flex items-baseline justify-between">
-                  <h2 className="text-lg font-semibold tracking-tight">Posiciones por grupo</h2>
-                  <span className="text-xs text-slate-500">
-                    {groupLabels.length} {groupLabels.length === 1 ? "grupo" : "grupos"}
-                  </span>
-                </div>
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr">
-                  {groupLabels.map(g => (
-                    <GroupCard
-                      key={g}
-                      label={g}
-                      rows={standings.get(g)!}
-                      hot={hotGroups.has(g)}
-                    />
-                  ))}
-                </div>
+                <details open className="group">
+                  <summary className="mb-3 flex items-baseline justify-between gap-3 select-none">
+                    <div className="flex items-baseline gap-2">
+                      <Chevron />
+                      <h2 className="text-lg font-semibold tracking-tight">Posiciones por grupo</h2>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      {groupLabels.length} {groupLabels.length === 1 ? "grupo" : "grupos"}
+                    </span>
+                  </summary>
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr">
+                    {groupLabels.map(g => (
+                      <GroupCard
+                        key={g}
+                        label={g}
+                        rows={standings.get(g)!}
+                        hot={hotGroups.has(g)}
+                      />
+                    ))}
+                  </div>
+                </details>
               </section>
             )}
 
@@ -349,9 +354,18 @@ export default async function PoolDetailPage({
 
           {/* Sidebar ranking - sticky en lg+ */}
           <aside className="lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
-              <div className="flex items-baseline justify-between">
-                <h2 className="font-semibold tracking-tight">Ranking</h2>
+            <details open className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
+              <summary className="flex items-baseline justify-between gap-2 select-none">
+                <div className="flex items-baseline gap-2">
+                  <Chevron />
+                  <h2 className="font-semibold tracking-tight">Ranking</h2>
+                </div>
+                <span className="text-xs text-slate-500">
+                  Tú: <span className="text-emerald-400 font-bold">{myStats.total}</span>
+                  {myRank > 0 && <> · #{myRank}</>}
+                </span>
+              </summary>
+              <div className="mt-3 hidden">
                 <span className="text-xs text-slate-500">
                   {ranking.length} {ranking.length === 1 ? "jugador" : "jugadores"}
                 </span>
@@ -415,7 +429,7 @@ export default async function PoolDetailPage({
               <p className="mt-4 border-t border-slate-800 pt-3 text-xs text-slate-500">
                 3 pts marcador exacto · 1 pt acertar ganador
               </p>
-            </div>
+            </details>
           </aside>
         </div>
       </div>
@@ -424,6 +438,23 @@ export default async function PoolDetailPage({
 }
 
 /* ───────────────────── Componentes auxiliares ───────────────────── */
+
+function Chevron({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      className="chevron text-slate-500"
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path d="M5 8l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function Stat({
   label,
@@ -459,23 +490,36 @@ function Stat({
 }
 
 function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; hot: boolean }) {
+  const leader = rows[0];
   return (
-    <div className={[
-      "rounded-2xl border bg-slate-900/60 p-4 transition",
-      hot
-        ? "border-emerald-500/40 ring-1 ring-emerald-500/20 lg:col-span-2"
-        : "border-slate-800",
-    ].join(" ")}>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-semibold tracking-tight">Grupo {label}</h3>
+    <details
+      open
+      className={[
+        "rounded-2xl border bg-slate-900/60 p-4 transition",
+        hot
+          ? "border-emerald-500/40 ring-1 ring-emerald-500/20 lg:col-span-2"
+          : "border-slate-800",
+      ].join(" ")}
+    >
+      <summary className="flex items-center justify-between gap-2 select-none">
+        <div className="flex items-center gap-2 min-w-0">
+          <Chevron size={14} />
+          <h3 className="font-semibold tracking-tight">Grupo {label}</h3>
+          {leader && (
+            <span className="hidden sm:inline text-xs text-slate-500">
+              · líder <Flag team={leader.team} size={12} />{" "}
+              <span className="text-slate-300">{leader.team}</span> {leader.pts} pts
+            </span>
+          )}
+        </div>
         {hot && (
           <span className="flex items-center gap-1 text-xs font-medium text-emerald-400">
             <span className="live-dot inline-block h-2 w-2 rounded-full bg-emerald-400" />
             EN VIVO
           </span>
         )}
-      </div>
-      <table className="w-full text-xs">
+      </summary>
+      <table className="mt-3 w-full text-xs">
         <thead className="text-slate-500">
           <tr>
             <th className="text-left font-normal w-4">#</th>
@@ -513,7 +557,7 @@ function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; h
           })}
         </tbody>
       </table>
-    </div>
+    </details>
   );
 }
 
