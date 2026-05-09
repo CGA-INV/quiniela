@@ -56,6 +56,56 @@ export async function createMatch(formData: FormData) {
   redirect("/admin/matches?ok=Partido%20agregado");
 }
 
+/** Actualiza el score en vivo sin cerrar el partido (mantiene finished=false). */
+export async function updateMatchScore(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const homeScore = Number(formData.get("home_score") ?? -1);
+  const awayScore = Number(formData.get("away_score") ?? -1);
+
+  if (!id || !Number.isInteger(homeScore) || !Number.isInteger(awayScore)
+      || homeScore < 0 || awayScore < 0 || homeScore > 30 || awayScore > 30) {
+    redirect("/admin/matches?error=Marcador%20inv%C3%A1lido");
+  }
+
+  const { supabase, user, isSuper } = await requireAnyAdmin();
+
+  const { data: cur } = await supabase
+    .from("matches")
+    .select("finished, home_team, away_team")
+    .eq("id", id)
+    .single();
+
+  // Pool admin no puede tocar partidos cerrados; super admin sí.
+  if (cur?.finished && !isSuper) {
+    redirect(
+      "/admin/matches?error=Partido%20cerrado.%20Reabri%C3%A9ndolo%20podr%C3%A1s%20editarlo%20de%20nuevo.",
+    );
+  }
+
+  const { error } = await supabase
+    .from("matches")
+    .update({
+      home_score: homeScore,
+      away_score: awayScore,
+      // No tocamos finished en update — solo cierra setMatchResult.
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
+
+  await logActivity(supabase, user.id, "match_updated", {
+    match_id: id,
+    home_team: cur?.home_team,
+    away_team: cur?.away_team,
+    home_score: homeScore,
+    away_score: awayScore,
+  });
+
+  revalidatePath("/admin/matches");
+  redirect(`/admin/matches?ok=Marcador%20actualizado:%20${homeScore}-${awayScore}`);
+}
+
 export async function setMatchResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const homeScore = Number(formData.get("home_score") ?? -1);

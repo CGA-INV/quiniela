@@ -58,6 +58,7 @@ export default async function ActivityLogPage({
   const filters: { value: string; label: string }[] = [
     { value: "all", label: "Todo" },
     { value: "invite_created", label: "Códigos generados" },
+    { value: "match_updated", label: "Marcadores en vivo" },
     { value: "match_closed", label: "Partidos cerrados" },
     { value: "match_reopened", label: "Reaperturas" },
     { value: "admin_toggled", label: "Promociones" },
@@ -157,6 +158,7 @@ function ActionIcon({ action }: { action: string }) {
   const map: Record<string, { color: string; symbol: string }> = {
     invite_created:  { color: "bg-emerald-500/20 text-emerald-400", symbol: "+" },
     invite_revoked:  { color: "bg-red-500/20 text-red-400",         symbol: "×" },
+    match_updated:   { color: "bg-blue-500/20 text-blue-400",       symbol: "⟳" },
     match_closed:    { color: "bg-emerald-500/20 text-emerald-400", symbol: "✓" },
     match_reopened:  { color: "bg-amber-500/20 text-amber-400",     symbol: "↻" },
     match_deleted:   { color: "bg-red-500/20 text-red-400",         symbol: "−" },
@@ -217,6 +219,15 @@ function ActionDescription({
           <span className="text-slate-400">revocó código</span>{" "}
           <span className="font-mono rounded bg-slate-800 px-1.5 py-0.5 text-red-400 line-through">{m.code}</span>{" "}
           <span className="text-slate-400">de</span> <span className="text-slate-200">{m.pool_name}</span>
+        </p>
+      );
+    case "match_updated":
+      return (
+        <p className="text-sm">
+          <strong className="text-slate-100">{actor}</strong>{" "}
+          <span className="text-slate-400">actualizó marcador en vivo de</span>{" "}
+          <span className="text-slate-200">{m.home_team} vs {m.away_team}</span>{" "}
+          <span className="font-mono text-blue-400">{m.home_score}–{m.away_score}</span>
         </p>
       );
     case "match_closed":

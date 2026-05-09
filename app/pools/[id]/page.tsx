@@ -689,9 +689,12 @@ function MatchCard({
             {m.home_score}–{m.away_score}
           </span>
         ) : live ? (
-          <span className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
+          <span className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
             <span className="live-dot inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            EN JUEGO
+            EN VIVO
+            {m.home_score !== null && m.away_score !== null && (
+              <span className="ml-1 font-mono">{m.home_score}–{m.away_score}</span>
+            )}
           </span>
         ) : open ? (
           <span className="text-emerald-400">abierto</span>

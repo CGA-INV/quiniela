@@ -4,6 +4,7 @@ export type ActivityAction =
   | "invite_created"
   | "invite_revoked"
   | "match_closed"
+  | "match_updated"
   | "match_reopened"
   | "match_deleted"
   | "match_created"

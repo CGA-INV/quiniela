@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin-context";
 import { fmtDate, timeUntil } from "@/lib/time";
 import { Flag } from "@/components/Flag";
-import { createMatch, setMatchResult, reopenMatch, deleteMatch, importMatches } from "./actions";
+import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches } from "./actions";
 
 const JSON_EXAMPLE = `[
   {
@@ -298,7 +298,7 @@ export default async function AdminMatchesPage({
                           <span className="text-xs text-slate-500 italic">cerrado</span>
                         )
                       ) : (
-                        <form action={setMatchResult} className="flex items-end gap-2">
+                        <form className="flex items-end gap-2 flex-wrap">
                           <input type="hidden" name="id" value={m.id} />
                           <label className="text-xs text-slate-400">
                             Local
@@ -306,7 +306,8 @@ export default async function AdminMatchesPage({
                               type="number"
                               name="home_score"
                               min="0"
-                              max="20"
+                              max="30"
+                              defaultValue={m.home_score ?? 0}
                               required
                               className="mt-0.5 block w-16 rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-500 focus:outline-none"
                             />
@@ -317,12 +318,26 @@ export default async function AdminMatchesPage({
                               type="number"
                               name="away_score"
                               min="0"
-                              max="20"
+                              max="30"
+                              defaultValue={m.away_score ?? 0}
                               required
                               className="mt-0.5 block w-16 rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-500 focus:outline-none"
                             />
                           </label>
-                          <button className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition">
+                          <button
+                            type="submit"
+                            formAction={updateMatchScore}
+                            className="rounded-md border border-emerald-500/40 px-3 py-1.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/10 transition"
+                            title="Actualiza el marcador en vivo. No cierra el partido."
+                          >
+                            Actualizar
+                          </button>
+                          <button
+                            type="submit"
+                            formAction={setMatchResult}
+                            className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition"
+                            title="Cierra el partido y calcula puntos finales."
+                          >
                             Cerrar partido
                           </button>
                         </form>

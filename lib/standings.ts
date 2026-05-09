@@ -49,10 +49,10 @@ export function buildStandings(matches: MinimalMatch[]): Map<string, StandingRow
     byGroup.set(m.group_label, grp);
   }
 
-  // Pase 2: aplicar resultados de partidos finalizados.
+  // Pase 2: aplicar cualquier partido con marcador (en vivo o finalizado).
   for (const m of matches) {
     if (m.stage !== "group" || !m.group_label) continue;
-    if (!m.finished || m.home_score === null || m.away_score === null) continue;
+    if (m.home_score === null || m.away_score === null) continue;
     const grp = byGroup.get(m.group_label);
     if (!grp) continue;
     const home = grp.get(m.home_team);
