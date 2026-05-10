@@ -1,6 +1,15 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/auth";
+
+// React.cache() dedupea llamadas dentro del mismo request/render —
+// si page + layout llaman ambos, solo se ejecuta una vez.
+export const getCachedUser = cache(async () => {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+});
 
 /**
  * Rol admin del usuario actual.
@@ -16,10 +25,10 @@ export type AdminContext = {
   managedPools: string[];
 };
 
-/** Solo lectura — para pages. Usa el cliente Supabase compartido. */
-export async function getAdminContext(): Promise<AdminContext> {
+/** Solo lectura — para pages. Cached: dedupea queries dentro del mismo render. */
+export const getAdminContext = cache(async (): Promise<AdminContext> => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) return { role: "none", userId: null, managedPools: [] };
   if (isAdminEmail(user.email)) {
     return { role: "super", userId: user.id, managedPools: [] };
@@ -33,7 +42,7 @@ export async function getAdminContext(): Promise<AdminContext> {
   return managedPools.length > 0
     ? { role: "pool", userId: user.id, managedPools }
     : { role: "none", userId: user.id, managedPools: [] };
-}
+});
 
 /** Para server actions: exige super admin. Redirige si no. */
 export async function requireSuper() {

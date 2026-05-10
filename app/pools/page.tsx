@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../login/actions";
 import { isAdminEmail } from "@/lib/auth";
+import { getCachedUser } from "@/lib/admin-context";
 
 export default async function PoolsPage({
   searchParams,
@@ -9,8 +10,7 @@ export default async function PoolsPage({
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
   const { error, ok } = await searchParams;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([createClient(), getCachedUser()]);
   const admin = isAdminEmail(user?.email);
 
   const { data: memberships } = await supabase

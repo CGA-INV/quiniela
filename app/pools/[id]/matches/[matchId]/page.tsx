@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDateLong, isPredictionOpen } from "@/lib/time";
 import { Flag } from "@/components/Flag";
+import { getCachedUser } from "@/lib/admin-context";
 
 type Match = {
   id: string;
@@ -47,9 +48,7 @@ export default async function MatchDetailPage({
   params: Promise<{ id: string; matchId: string }>;
 }) {
   const { id: poolId, matchId } = await params;
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([createClient(), getCachedUser()]);
   if (!user) redirect("/login");
 
   const [{ data: pool }, { data: match }] = await Promise.all([

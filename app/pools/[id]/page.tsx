@@ -6,6 +6,7 @@ import { buildStandings, type StandingRow } from "@/lib/standings";
 import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
+import { getCachedUser } from "@/lib/admin-context";
 import { signOut } from "../../login/actions";
 import { saveAllPredictions } from "./actions";
 import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./payments-actions";
@@ -48,14 +49,6 @@ type Prediction = {
   points: number;
 };
 
-type RawMember = {
-  user_id: string;
-  is_admin?: boolean;
-  profiles: { display_name: string } | { display_name: string }[] | null;
-};
-
-type PointRow = { user_id: string; points: number };
-
 type Payment = {
   id: string;
   payer_id: string;
@@ -79,9 +72,7 @@ export default async function PoolDetailPage({
   const filter: Filter = (f === "open" || f === "live" || f === "done") ? f : "all";
   const activeTab: PoolTab = (tab === "partidos" || tab === "ranking" || tab === "pagos") ? tab : "inicio";
 
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([createClient(), getCachedUser()]);
   if (!user) redirect("/login");
   const isSuper = isAdminEmail(user.email);
 
@@ -92,12 +83,9 @@ export default async function PoolDetailPage({
     .single();
   if (poolErr || !pool) notFound();
 
-  const [{ data: members }, { data: matches }, { data: ownPreds }, { data: allPoints }, { data: payments }] =
+  // RPC pool_ranking agrega miembros + stats en server-side (1 query, mucho más rápido).
+  const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }] =
     await Promise.all([
-      supabase
-        .from("pool_members")
-        .select("user_id, is_admin, profiles(display_name)")
-        .eq("pool_id", id),
       // Sandbox pool: solo ve sus propios partidos. Pool real: solo globales.
       (pool.is_sandbox
         ? supabase
@@ -114,10 +102,7 @@ export default async function PoolDetailPage({
         .select("match_id, pred_home, pred_away, points")
         .eq("user_id", user.id)
         .eq("pool_id", id),
-      supabase
-        .from("predictions")
-        .select("user_id, points")
-        .eq("pool_id", id),
+      supabase.rpc("pool_ranking", { p_pool: id }),
       supabase
         .from("payments")
         .select("id, payer_id, payee_id, proof_url, uploaded_at, validated_at")
@@ -129,38 +114,35 @@ export default async function PoolDetailPage({
     ((ownPreds ?? []) as Prediction[]).map(p => [p.match_id, p]),
   );
 
-  // Members + ranking
-  const rawMembers = (members ?? []) as unknown as RawMember[];
-  const memberRows = rawMembers.map(m => ({
-    user_id: m.user_id,
-    is_admin: m.is_admin ?? false,
-    display_name: Array.isArray(m.profiles)
-      ? (m.profiles[0]?.display_name ?? "—")
-      : (m.profiles?.display_name ?? "—"),
+  // RPC ya devuelve rows ordenados con stats + is_admin
+  type RankingRow = {
+    user_id: string;
+    display_name: string;
+    is_admin: boolean;
+    total: number;
+    exactos: number;
+    ganador: number;
+    empate: number;
+  };
+  const ranking = ((rankingData ?? []) as RankingRow[]);
+  const memberRows = ranking.map(r => ({
+    user_id: r.user_id,
+    display_name: r.display_name,
+    is_admin: r.is_admin,
   }));
 
-  const myMembership = memberRows.find(m => m.user_id === user.id);
-  const isPoolAdmin = myMembership?.is_admin ?? false;
+  const myRow = ranking.find(r => r.user_id === user.id);
+  const isPoolAdmin = myRow?.is_admin ?? false;
   const showAdminLink = isSuper || isPoolAdmin;
 
-  const statsByUser = new Map<string, { total: number; exactos: number; ganador: number; empate: number }>();
-  for (const r of (allPoints ?? []) as PointRow[]) {
-    const cur = statsByUser.get(r.user_id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 };
-    cur.total += r.points ?? 0;
-    if (r.points === 5) cur.exactos++;
-    else if (r.points === 3) cur.ganador++;
-    else if (r.points === 2) cur.empate++;
-    statsByUser.set(r.user_id, cur);
-  }
-  const ranking = memberRows
-    .map(m => ({
-      ...m,
-      ...(statsByUser.get(m.user_id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 }),
-    }))
-    .sort((a, b) => b.total - a.total || a.display_name.localeCompare(b.display_name));
-
-  const myStats = statsByUser.get(user.id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 };
+  const myStats = myRow
+    ? { total: myRow.total, exactos: myRow.exactos, ganador: myRow.ganador, empate: myRow.empate }
+    : { total: 0, exactos: 0, ganador: 0, empate: 0 };
   const myRank = ranking.findIndex(r => r.user_id === user.id) + 1;
+
+  // statsByUser para computePoolWinner
+  const statsByUser = new Map<string, { total: number; exactos: number }>();
+  for (const r of ranking) statsByUser.set(r.user_id, { total: r.total, exactos: r.exactos });
 
   // Winner se computa desde la data ya fetchada (sync, sin queries extra).
   const winner = computePoolWinner({
