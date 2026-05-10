@@ -48,23 +48,39 @@ export default async function AdminPage({
   const isSuper = ctx.role === "super";
   const supabase = await createClient();
 
-  // Salas: super admin ve todas; pool admin solo las que admin.
+  // Salas + perfiles (independientes) en paralelo.
   const poolsQuery = supabase
     .from("pools")
     .select("id, name, invite_code, owner_id")
     .order("created_at", { ascending: false });
   if (!isSuper) poolsQuery.in("id", ctx.managedPools);
-  const { data: pools } = await poolsQuery;
-  const poolList = (pools ?? []) as Pool[];
 
-  // Miembros (con flag is_admin) de las salas visibles.
+  const [{ data: pools }, { data: allProfiles }] = await Promise.all([
+    poolsQuery,
+    supabase
+      .from("profiles")
+      .select("id, display_name")
+      .order("display_name", { ascending: true }),
+  ]);
+  const poolList = (pools ?? []) as Pool[];
+  const profileList = (allProfiles ?? []) as { id: string; display_name: string }[];
+
+  // Miembros + invitaciones en paralelo (ambos dependen de poolIds).
   const poolIds = poolList.map(p => p.id);
-  const { data: members } = poolIds.length > 0
-    ? await supabase
-        .from("pool_members")
-        .select("pool_id, user_id, is_admin, profiles(display_name)")
-        .in("pool_id", poolIds)
-    : { data: [] };
+  const [{ data: members }, { data: invitations }] = poolIds.length > 0
+    ? await Promise.all([
+        supabase
+          .from("pool_members")
+          .select("pool_id, user_id, is_admin, profiles(display_name)")
+          .in("pool_id", poolIds),
+        supabase
+          .from("invitations")
+          .select("id, pool_id, email, code, used_at, expires_at, created_at")
+          .in("pool_id", poolIds)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   // Mapear: pool_id -> array de miembros con nombre
   type MemberView = { user_id: string; display_name: string; is_admin: boolean };
@@ -79,26 +95,8 @@ export default async function AdminPage({
   }
 
   const myUserId = ctx.userId;
-
-  // Invitaciones (filtradas por las salas visibles).
-  const { data: invitations } = poolIds.length > 0
-    ? await supabase
-        .from("invitations")
-        .select("id, pool_id, email, code, used_at, expires_at, created_at")
-        .in("pool_id", poolIds)
-        .order("created_at", { ascending: false })
-        .limit(50)
-    : { data: [] };
   const inviteList = (invitations ?? []) as Invitation[];
   const poolName = (id: string) => poolList.find(p => p.id === id)?.name ?? "—";
-
-  // Todos los perfiles registrados (para el dropdown de "agregar miembro existente").
-  // RLS de profiles permite a authenticated leer todos.
-  const { data: allProfiles } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .order("display_name", { ascending: true });
-  const profileList = (allProfiles ?? []) as { id: string; display_name: string }[];
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">

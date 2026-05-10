@@ -8,6 +8,35 @@ export type WinnerInfo = {
 };
 
 /**
+ * Versión sync que reusa data ya fetchada — la usa /pools/[id]/page.tsx
+ * para evitar 4 queries redundantes. Asume que matches contiene SOLO los
+ * partidos del scope correcto (sandbox o global) — el caller filtra antes.
+ */
+export function computePoolWinner(opts: {
+  matches: { stage: string; finished: boolean }[];
+  members: { user_id: string; display_name: string }[];
+  statsByUser: Map<string, { total: number; exactos: number }>;
+}): WinnerInfo | null {
+  const groupMatches = opts.matches.filter(m => m.stage === "group");
+  if (groupMatches.length === 0) return null;
+  if (groupMatches.some(m => !m.finished)) return null;
+  if (opts.members.length === 0) return null;
+
+  const sorted = opts.members
+    .map(m => {
+      const s = opts.statsByUser.get(m.user_id) ?? { total: 0, exactos: 0 };
+      return { user_id: m.user_id, display_name: m.display_name, total: s.total, exactos: s.exactos };
+    })
+    .sort((a, b) => {
+      if (b.total !== a.total) return b.total - a.total;
+      if (b.exactos !== a.exactos) return b.exactos - a.exactos;
+      return a.display_name.localeCompare(b.display_name);
+    });
+
+  return sorted[0];
+}
+
+/**
  * Calcula el ganador de la fase de grupos para una sala.
  * Retorna null si:
  *  - No hay partidos de fase de grupos cargados

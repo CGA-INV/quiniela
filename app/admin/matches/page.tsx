@@ -58,29 +58,28 @@ type Match = {
 
 type SandboxPool = { id: string; name: string };
 
-function ScopeTab({
+function FilterTab({
+  href,
   label,
-  value,
   active,
   count,
 }: {
+  href: string;
   label: string;
-  value: string;
-  active: string;
+  active: boolean;
   count: number;
 }) {
-  const isActive = active === value;
   return (
     <Link
-      href={value === "all" ? "/admin/matches" : `/admin/matches?scope=${value}`}
+      href={href}
       className={[
-        "rounded-md px-2.5 py-1 transition",
-        isActive
+        "rounded-md px-2.5 py-1 transition whitespace-nowrap",
+        active
           ? "bg-emerald-500 text-slate-950 font-medium"
           : "text-slate-300 hover:bg-slate-800/60",
       ].join(" ")}
     >
-      {label} <span className={isActive ? "text-slate-800" : "text-slate-500"}>({count})</span>
+      {label} <span className={active ? "text-slate-800" : "text-slate-500"}>({count})</span>
     </Link>
   );
 }
@@ -88,9 +87,9 @@ function ScopeTab({
 export default async function AdminMatchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string; scope?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; scope?: string; st?: string }>;
 }) {
-  const { error, ok, scope } = await searchParams;
+  const { error, ok, scope, st } = await searchParams;
   const ctx = await getAdminContext();
   if (ctx.role === "none") redirect("/pools?error=Acceso%20restringido");
   const isSuper = ctx.role === "super";
@@ -116,13 +115,49 @@ export default async function AdminMatchesPage({
 
   // Filtrar por scope si viene en query.
   const activeScope = scope ?? "all";
-  const matchList = matchListAll.filter(m => {
+  const matchesByScope = matchListAll.filter(m => {
     if (activeScope === "all") return true;
     if (activeScope === "global") return m.pool_id === null;
     return m.pool_id === activeScope;
   });
 
+  // Filtrar por status (estado del partido). Default: "open" (por jugar).
+  const activeStatus = (st === "live" || st === "done" || st === "all") ? st : "open";
+  const nowMs = Date.now();
+  const matchList = matchesByScope.filter(m => {
+    if (activeStatus === "all") return true;
+    const started = new Date(m.kickoff_at).getTime() <= nowMs;
+    if (activeStatus === "open") return !m.finished && !started;
+    if (activeStatus === "live") return !m.finished && started;
+    if (activeStatus === "done") return m.finished;
+    return true;
+  });
+
+  // Counts por status (sobre el scope ya filtrado)
+  const statusCounts = matchesByScope.reduce(
+    (acc, m) => {
+      const started = new Date(m.kickoff_at).getTime() <= nowMs;
+      if (m.finished) acc.done++;
+      else if (started) acc.live++;
+      else acc.open++;
+      acc.all++;
+      return acc;
+    },
+    { all: 0, open: 0, live: 0, done: 0 },
+  );
+
   const sandboxName = (id: string) => sandboxList.find(p => p.id === id)?.name ?? "—";
+
+  // Genera href manteniendo otros params.
+  const buildHref = (overrides: Partial<{ scope: string; st: string }>) => {
+    const params = new URLSearchParams();
+    const finalScope = overrides.scope ?? (activeScope === "all" ? null : activeScope);
+    const finalSt = overrides.st ?? (activeStatus === "open" ? null : activeStatus);
+    if (finalScope) params.set("scope", finalScope);
+    if (finalSt) params.set("st", finalSt);
+    const qs = params.toString();
+    return qs ? `/admin/matches?${qs}` : "/admin/matches";
+  };
 
   // Cuenta miembros únicos que predijeron por partido (across pools).
   const usersByMatch = new Map<string, Set<string>>();
@@ -295,19 +330,32 @@ export default async function AdminMatchesPage({
         )}
 
         <section className="mt-6">
-          <div className="mb-3 flex items-baseline justify-between gap-3 flex-wrap">
-            <h2 className="text-xl font-semibold">Calendario ({matchList.length}{activeScope !== "all" && ` de ${matchListAll.length}`})</h2>
-            {(sandboxList.length > 0 || activeScope !== "all") && (
+          <div className="mb-3">
+            <h2 className="text-xl font-semibold">
+              Calendario <span className="text-slate-500 text-base">({matchList.length})</span>
+            </h2>
+          </div>
+
+          {/* Filtros: status y scope */}
+          <div className="mb-4 flex flex-col gap-2">
+            {/* Status (siempre visible) */}
+            <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-1 text-xs">
+              <FilterTab href={buildHref({ st: "open" })} label="Por jugar" active={activeStatus === "open"} count={statusCounts.open} />
+              <FilterTab href={buildHref({ st: "live" })} label="En vivo" active={activeStatus === "live"} count={statusCounts.live} />
+              <FilterTab href={buildHref({ st: "done" })} label="Finalizados" active={activeStatus === "done"} count={statusCounts.done} />
+              <FilterTab href={buildHref({ st: "all" })} label="Todos" active={activeStatus === "all"} count={statusCounts.all} />
+            </div>
+            {/* Scope (solo cuando hay sandbox) */}
+            {sandboxList.length > 0 && (
               <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-1 text-xs">
-                <ScopeTab label="Todos" value="all" active={activeScope} count={matchListAll.length} />
-                <ScopeTab label="📡 Global" value="global" active={activeScope}
-                  count={matchListAll.filter(m => m.pool_id === null).length} />
+                <FilterTab href={buildHref({ scope: "all" })} label="Todos los partidos" active={activeScope === "all"} count={matchListAll.length} />
+                <FilterTab href={buildHref({ scope: "global" })} label="📡 Global" active={activeScope === "global"} count={matchListAll.filter(m => m.pool_id === null).length} />
                 {sandboxList.map(p => (
-                  <ScopeTab
+                  <FilterTab
                     key={p.id}
+                    href={buildHref({ scope: p.id })}
                     label={`🧪 ${p.name}`}
-                    value={p.id}
-                    active={activeScope}
+                    active={activeScope === p.id}
                     count={matchListAll.filter(m => m.pool_id === p.id).length}
                   />
                 ))}

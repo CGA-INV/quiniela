@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDate, timeUntil, isPredictionOpen, lockAtMs } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
-import { getPoolWinner } from "@/lib/winner";
+import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
 import { signOut } from "../../login/actions";
@@ -124,9 +124,6 @@ export default async function PoolDetailPage({
         .eq("pool_id", id),
     ]);
 
-  // Detectar ganador (si la fase de grupos terminó)
-  const winner = await getPoolWinner(supabase, id);
-
   const matchList = (matches ?? []) as Match[];
   const predMap = new Map<string, Prediction>(
     ((ownPreds ?? []) as Prediction[]).map(p => [p.match_id, p]),
@@ -164,6 +161,13 @@ export default async function PoolDetailPage({
 
   const myStats = statsByUser.get(user.id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 };
   const myRank = ranking.findIndex(r => r.user_id === user.id) + 1;
+
+  // Winner se computa desde la data ya fetchada (sync, sin queries extra).
+  const winner = computePoolWinner({
+    matches: matchList,
+    members: memberRows,
+    statsByUser,
+  });
 
   // Standings y "hot groups"
   const standings = buildStandings(matchList);
