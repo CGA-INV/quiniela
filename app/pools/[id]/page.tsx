@@ -9,6 +9,7 @@ import { isAdminEmail } from "@/lib/auth";
 import { signOut } from "../../login/actions";
 import { saveAllPredictions } from "./actions";
 import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./payments-actions";
+import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -71,11 +72,12 @@ export default async function PoolDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; ok?: string; f?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; f?: string; tab?: string }>;
 }) {
   const { id } = await params;
-  const { error, ok, f } = await searchParams;
+  const { error, ok, f, tab } = await searchParams;
   const filter: Filter = (f === "open" || f === "live" || f === "done") ? f : "all";
+  const activeTab: PoolTab = (tab === "partidos" || tab === "ranking" || tab === "pagos") ? tab : "inicio";
 
   const supabase = await createClient();
 
@@ -244,7 +246,7 @@ export default async function PoolDetailPage({
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-6">
         {error && (
           <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
             {decodeURIComponent(error)}
@@ -261,17 +263,25 @@ export default async function PoolDetailPage({
           <main className="min-w-0 space-y-6">
             {/* Pagos (cuando termina la fase de grupos) */}
             {winner && (
-              <PaymentsSection
-                poolId={id}
-                winner={winner}
-                currentUserId={user.id}
-                memberRows={memberRows}
-                payments={(payments ?? []) as Payment[]}
-              />
+              <div className={activeTab === "pagos" ? "block" : "hidden lg:block"}>
+                <PaymentsSection
+                  poolId={id}
+                  winner={winner}
+                  currentUserId={user.id}
+                  memberRows={memberRows}
+                  payments={(payments ?? []) as Payment[]}
+                />
+              </div>
+            )}
+            {/* Estado vacío de pagos en mobile cuando aún no termina */}
+            {!winner && activeTab === "pagos" && (
+              <div className="lg:hidden rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-sm text-slate-400">
+                <p>La sección de pagos se activa cuando termina la fase de grupos.</p>
+              </div>
             )}
 
             {/* KPI strip */}
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <section className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${activeTab === "inicio" ? "block" : "hidden lg:grid"}`}>
               <Stat
                 label="Tu posición"
                 value={myRank > 0 ? `#${myRank}` : "—"}
@@ -305,7 +315,7 @@ export default async function PoolDetailPage({
 
             {/* Posiciones por grupo - bento - colapsable */}
             {groupLabels.length > 0 && (
-              <section>
+              <section className={activeTab === "inicio" ? "block" : "hidden lg:block"}>
                 <details open className="group">
                   <summary className="mb-3 flex items-baseline justify-between gap-3 select-none">
                     <div className="flex items-baseline gap-2">
@@ -332,7 +342,7 @@ export default async function PoolDetailPage({
 
             {/* Filtros */}
             {matchList.length > 0 && (
-              <section>
+              <section className={activeTab === "partidos" ? "block" : "hidden lg:block"}>
                 <div className="mb-3 flex items-baseline justify-between">
                   <h2 className="text-lg font-semibold tracking-tight">Partidos</h2>
                 </div>
@@ -394,8 +404,8 @@ export default async function PoolDetailPage({
             )}
           </main>
 
-          {/* Sidebar ranking - sticky en lg+ */}
-          <aside className="lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto">
+          {/* Sidebar ranking - sticky en lg+; tab activo en mobile */}
+          <aside className={`lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto ${activeTab === "ranking" ? "block" : "hidden lg:block"}`}>
             <details open className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
               <summary className="flex items-baseline justify-between gap-2 select-none">
                 <div className="flex items-baseline gap-2">
@@ -477,6 +487,13 @@ export default async function PoolDetailPage({
           </aside>
         </div>
       </div>
+
+      {/* Bottom nav solo mobile */}
+      <PoolMobileNav
+        poolId={id}
+        active={activeTab}
+        pagosBadge={!!winner && !payments?.some(p => p.payer_id === user.id && p.validated_at)}
+      />
     </main>
   );
 }

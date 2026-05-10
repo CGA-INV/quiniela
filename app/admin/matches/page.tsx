@@ -5,6 +5,7 @@ import { getAdminContext } from "@/lib/admin-context";
 import { fmtDate, timeUntil } from "@/lib/time";
 import { Flag } from "@/components/Flag";
 import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches } from "./actions";
+import { AdminNav } from "@/components/AdminNav";
 
 const JSON_EXAMPLE = `[
   {
@@ -134,20 +135,25 @@ export default async function AdminMatchesPage({
   const now = Date.now();
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <Link href="/admin" className="text-sm text-slate-400 hover:text-slate-200">
-          ← Admin
-        </Link>
-        <h1 className="mt-3 text-3xl font-bold">Partidos</h1>
+    <main className="min-h-dvh bg-slate-950 text-slate-100">
+      <AdminNav
+        active="partidos"
+        isSuper={isSuper}
+        title="Partidos"
+        breadcrumb={[
+          { label: "Admin", href: "/admin" },
+          { label: "Partidos" },
+        ]}
+      />
 
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {error && (
-          <p className="mt-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
             {decodeURIComponent(error)}
           </p>
         )}
         {ok && (
-          <p className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <p className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
             {decodeURIComponent(ok)}
           </p>
         )}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin-context";
+import { AdminNav } from "@/components/AdminNav";
 
 type LogRow = {
   id: string;
@@ -71,21 +72,15 @@ export default async function ActivityLogPage({
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link href="/admin" className="text-sm text-slate-400 hover:text-slate-100 transition">
-              ←
-            </Link>
-            <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-              Bitácora de actividad
-            </h1>
-            <span className="hidden sm:inline rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400 ring-1 ring-amber-500/30">
-              Super admin
-            </span>
-          </div>
-        </div>
-      </header>
+      <AdminNav
+        active="bitacora"
+        isSuper={true}
+        title="Bitácora de actividad"
+        breadcrumb={[
+          { label: "Admin", href: "/admin" },
+          { label: "Bitácora" },
+        ]}
+      />
 
       <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-1 text-sm">

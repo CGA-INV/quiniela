@@ -11,6 +11,7 @@ import {
   addExistingMember,
   deleteUser,
 } from "./actions";
+import { AdminNav } from "@/components/AdminNav";
 
 type Pool = {
   id: string;
@@ -101,41 +102,11 @@ export default async function AdminPage({
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link href="/pools" className="text-sm text-slate-400 hover:text-slate-100 transition">
-              ←
-            </Link>
-            <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-              {isSuper ? "Administración global" : "Mi panel de admin"}
-            </h1>
-            <span className={`hidden sm:inline rounded-md px-2 py-0.5 text-xs font-medium ${
-              isSuper
-                ? "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/30"
-                : "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30"
-            }`}>
-              {isSuper ? "Super admin" : "Admin de sala"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {isSuper && (
-              <Link
-                href="/admin/activity"
-                className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 transition"
-              >
-                Bitácora
-              </Link>
-            )}
-            <Link
-              href="/admin/matches"
-              className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition"
-            >
-              Cerrar partidos →
-            </Link>
-          </div>
-        </div>
-      </header>
+      <AdminNav
+        active="salas"
+        isSuper={isSuper}
+        title={isSuper ? "Administración global" : "Mi panel de admin"}
+      />
 
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {error && (
@@ -272,7 +243,7 @@ export default async function AdminPage({
 
         {/* Usuarios registrados — solo super admin puede borrar */}
         {isSuper && (
-          <section className="mt-8">
+          <section className="mt-8" id="usuarios">
             <details>
               <summary className="cursor-pointer mb-3 select-none">
                 <h2 className="inline text-lg font-semibold tracking-tight">
