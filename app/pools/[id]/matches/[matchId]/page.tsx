@@ -111,8 +111,9 @@ export default async function MatchDetailPage({
 
   const finished = m.finished && m.home_score !== null && m.away_score !== null;
   const stats = {
-    exactos: rows.filter(r => r.points === 3).length,
-    ganador: rows.filter(r => r.points === 1).length,
+    exactos: rows.filter(r => r.points === 5).length,
+    ganador: rows.filter(r => r.points === 3).length,
+    empate: rows.filter(r => r.points === 2).length,
     fallaron: rows.filter(r => r.predicted && r.points === 0).length,
     noParticipo: rows.filter(r => !r.predicted).length,
   };
@@ -169,9 +170,10 @@ export default async function MatchDetailPage({
         </header>
 
         {finished && (
-          <section className="mt-6 grid grid-cols-4 gap-3 text-center">
+          <section className="mt-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-5">
             <Stat label="Exactos" value={stats.exactos} color="text-emerald-400" />
             <Stat label="Ganador" value={stats.ganador} color="text-emerald-300" />
+            <Stat label="Empate" value={stats.empate} color="text-blue-400" />
             <Stat label="Fallaron" value={stats.fallaron} color="text-slate-400" />
             <Stat label="No participó" value={stats.noParticipo} color="text-slate-500" />
           </section>
@@ -184,10 +186,12 @@ export default async function MatchDetailPage({
               const isMe = r.user_id === user.id;
               const color = !r.predicted
                 ? "border-slate-800 bg-slate-900/50 text-slate-500"
-                : r.points === 3
+                : r.points === 5
                 ? "border-emerald-500/40 bg-emerald-500/10"
-                : r.points === 1
+                : r.points === 3
                 ? "border-emerald-500/20 bg-slate-900"
+                : r.points === 2
+                ? "border-blue-500/20 bg-slate-900"
                 : "border-slate-800 bg-slate-900";
               return (
                 <li
@@ -209,7 +213,7 @@ export default async function MatchDetailPage({
                         "w-12 text-right text-sm",
                         r.points > 0 ? "text-emerald-400 font-semibold" : "text-slate-500",
                       ].join(" ")}>
-                        {r.predicted ? `${r.points} pt${r.points === 1 ? "" : "s"}` : ""}
+                        {r.predicted ? `${r.points} pts` : ""}
                       </span>
                     )}
                   </div>

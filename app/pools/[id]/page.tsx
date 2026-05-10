@@ -144,22 +144,23 @@ export default async function PoolDetailPage({
   const isPoolAdmin = myMembership?.is_admin ?? false;
   const showAdminLink = isSuper || isPoolAdmin;
 
-  const statsByUser = new Map<string, { total: number; exactos: number; ganador: number }>();
+  const statsByUser = new Map<string, { total: number; exactos: number; ganador: number; empate: number }>();
   for (const r of (allPoints ?? []) as PointRow[]) {
-    const cur = statsByUser.get(r.user_id) ?? { total: 0, exactos: 0, ganador: 0 };
+    const cur = statsByUser.get(r.user_id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 };
     cur.total += r.points ?? 0;
-    if (r.points === 3) cur.exactos++;
-    else if (r.points === 1) cur.ganador++;
+    if (r.points === 5) cur.exactos++;
+    else if (r.points === 3) cur.ganador++;
+    else if (r.points === 2) cur.empate++;
     statsByUser.set(r.user_id, cur);
   }
   const ranking = memberRows
     .map(m => ({
       ...m,
-      ...(statsByUser.get(m.user_id) ?? { total: 0, exactos: 0, ganador: 0 }),
+      ...(statsByUser.get(m.user_id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 }),
     }))
     .sort((a, b) => b.total - a.total || a.display_name.localeCompare(b.display_name));
 
-  const myStats = statsByUser.get(user.id) ?? { total: 0, exactos: 0, ganador: 0 };
+  const myStats = statsByUser.get(user.id) ?? { total: 0, exactos: 0, ganador: 0, empate: 0 };
   const myRank = ranking.findIndex(r => r.user_id === user.id) + 1;
 
   // Standings y "hot groups"
@@ -281,8 +282,8 @@ export default async function PoolDetailPage({
                 label="Tus puntos"
                 value={myStats.total}
                 sub={
-                  myStats.exactos > 0 || myStats.ganador > 0
-                    ? `${myStats.exactos} exactos · ${myStats.ganador} ganador`
+                  myStats.exactos > 0 || myStats.ganador > 0 || myStats.empate > 0
+                    ? `${myStats.exactos} exactos · ${myStats.ganador} ganador · ${myStats.empate} empate`
                     : "sin puntos aún"
                 }
                 accent="emerald"
@@ -451,14 +452,16 @@ export default async function PoolDetailPage({
                             {r.total}
                           </span>
                         </div>
-                        {(r.exactos > 0 || r.ganador > 0) && (
-                          <div className="ml-7 mt-0.5 text-xs text-slate-500">
+                        {(r.exactos > 0 || r.ganador > 0 || r.empate > 0) && (
+                          <div className="ml-7 mt-0.5 text-xs text-slate-500 flex flex-wrap gap-x-2">
                             {r.exactos > 0 && (
                               <span><span className="text-emerald-400 font-medium">{r.exactos}</span> exacto{r.exactos === 1 ? "" : "s"}</span>
                             )}
-                            {r.exactos > 0 && r.ganador > 0 && " · "}
                             {r.ganador > 0 && (
                               <span><span className="text-emerald-300 font-medium">{r.ganador}</span> ganador</span>
+                            )}
+                            {r.empate > 0 && (
+                              <span><span className="text-blue-400 font-medium">{r.empate}</span> empate</span>
                             )}
                           </div>
                         )}
@@ -468,7 +471,7 @@ export default async function PoolDetailPage({
                 </ol>
               )}
               <p className="mt-4 border-t border-slate-800 pt-3 text-xs text-slate-500">
-                3 pts marcador exacto · 1 pt acertar ganador
+                5 pts marcador exacto · 3 pts ganador · 2 pts empate
               </p>
             </details>
           </aside>
@@ -1020,7 +1023,7 @@ function MatchCard({
           </span>
           {finished && pred && (
             <span className={pred.points > 0 ? "text-emerald-400 font-medium" : "text-slate-500"}>
-              {pred.points} {pred.points === 1 ? "pt" : "pts"}
+              {pred.points} pts
             </span>
           )}
         </div>
