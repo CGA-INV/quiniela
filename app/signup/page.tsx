@@ -28,7 +28,12 @@ export default async function SignupPage({
         >
           {error && (
             <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/15 p-3">
-              <span aria-hidden className="text-red-400">⚠</span>
+              <span
+                className="material-symbols-outlined mt-0.5 text-red-400"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                error
+              </span>
               <p className="text-sm text-red-400">{decodeURIComponent(error)}</p>
             </div>
           )}
@@ -116,7 +121,8 @@ export default async function SignupPage({
             type="submit"
             className="glow-lime mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c6ff3d] py-4 font-mono text-xs font-bold uppercase tracking-[0.12em] text-[#0a1f1c] transition-all hover:brightness-110 active:scale-95"
           >
-            Crear cuenta <span aria-hidden>→</span>
+            Crear cuenta
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
 
           <p className="text-center text-base text-slate-400">

@@ -35,8 +35,14 @@ export default async function PoolsPage({
 
       {/* Top app bar */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-100/10 bg-[#0a1f1c]/70 px-5 backdrop-blur-md">
-        <span className="font-display text-2xl uppercase italic tracking-tight text-[#c6ff3d]">
-          ⚽ Mundial 2026
+        <span className="flex items-center gap-1.5 font-display text-2xl uppercase italic tracking-tight text-[#c6ff3d]">
+          <span
+            className="material-symbols-outlined text-2xl"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            sports_soccer
+          </span>
+          Mundial 2026
         </span>
         <div className="flex items-center gap-3 text-sm">
           {admin && (
@@ -108,7 +114,7 @@ export default async function PoolsPage({
                   </span>
                 </div>
                 <div className="grid h-10 w-10 place-items-center rounded-full border border-slate-100/20 bg-slate-800 text-slate-100 transition-colors group-hover:bg-[#c6ff3d]/10 group-hover:text-[#c6ff3d]">
-                  →
+                  <span className="material-symbols-outlined">arrow_forward</span>
                 </div>
               </Link>
             ))}
