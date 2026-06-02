@@ -26,9 +26,6 @@ export default async function Home() {
         <div className="font-display text-3xl uppercase italic tracking-tighter text-[#c6ff3d]">
           Mundial 2026
         </div>
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-slate-800 text-slate-400">
-          <span className="material-symbols-outlined">language</span>
-        </div>
       </header>
 
       {/* Contenido */}
