@@ -39,7 +39,7 @@ export function PoolMobileNav({
                 ].join(" ")}
                 style={{ minHeight: 56 }}
               >
-                <Icon className={`h-6 w-6 ${isActive ? "drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]" : ""}`} />
+                <Icon className={`h-6 w-6 ${isActive ? "drop-shadow-[0_0_6px_rgba(198,255,61,0.5)]" : ""}`} />
                 <span className="leading-none">{label}</span>
                 {showBadge && (
                   <span className="absolute top-1.5 right-[calc(50%-1.25rem)] h-2 w-2 rounded-full bg-amber-400 ring-2 ring-slate-950" />

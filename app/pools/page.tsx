@@ -15,74 +15,105 @@ export default async function PoolsPage({
 
   const { data: memberships } = await supabase
     .from("pool_members")
-    .select("pool_id, pools(id, name, invite_code, owner_id)")
+    .select("pool_id, pools(id, name, invite_code, owner_id, is_sandbox)")
     .eq("user_id", user!.id);
 
-  type PoolRow = { id: string; name: string; invite_code: string; owner_id: string };
+  type PoolRow = {
+    id: string;
+    name: string;
+    invite_code: string;
+    owner_id: string;
+    is_sandbox: boolean;
+  };
   type Membership = { pools: PoolRow | PoolRow[] | null };
   const pools: PoolRow[] = ((memberships ?? []) as unknown as Membership[])
     .flatMap(m => (Array.isArray(m.pools) ? m.pools : m.pools ? [m.pools] : []));
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-10">
-      <div className="mx-auto max-w-3xl">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Mis salas</h1>
-          <div className="flex items-center gap-4 text-sm">
-            {admin && (
-              <Link
-                href="/admin"
-                className="rounded-md bg-emerald-500 px-3 py-1.5 font-medium text-slate-950 hover:bg-emerald-400 transition"
-              >
-                Panel admin
-              </Link>
-            )}
-            <form action={signOut}>
-              <button className="text-slate-400 hover:text-slate-200">
-                Salir
-              </button>
-            </form>
-          </div>
-        </header>
+    <main className="relative min-h-screen bg-[#0a1f1c] text-slate-100 pb-16">
+      <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-[0.12]" />
+
+      {/* Top app bar */}
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-100/10 bg-[#0a1f1c]/70 px-5 backdrop-blur-md">
+        <span className="font-display text-2xl uppercase italic tracking-tight text-[#c6ff3d]">
+          ⚽ Mundial 2026
+        </span>
+        <div className="flex items-center gap-3 text-sm">
+          {admin && (
+            <Link
+              href="/admin"
+              className="rounded-full border border-slate-100/15 bg-slate-800 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-slate-300 transition hover:text-[#c6ff3d] active:scale-95"
+            >
+              Panel admin
+            </Link>
+          )}
+          <form action={signOut}>
+            <button className="text-slate-400 transition hover:text-slate-200">
+              Salir
+            </button>
+          </form>
+        </div>
+      </header>
+
+      <div className="relative z-10 mx-auto w-full max-w-3xl px-5 pt-8">
+        <div className="mb-8">
+          <h1 className="mb-1 text-4xl tracking-tight text-slate-100">Mis Quinielas</h1>
+          <p className="text-base text-slate-400">
+            Gestiona y participa en tus grupos de predicción.
+          </p>
+        </div>
 
         {error && (
-          <p className="mt-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <p className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
             {decodeURIComponent(error)}
           </p>
         )}
         {ok && (
-          <p className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <p className="mb-4 rounded-md border border-[#c6ff3d]/30 bg-[#c6ff3d]/10 px-3 py-2 text-sm text-[#c6ff3d]">
             {decodeURIComponent(ok)}
           </p>
         )}
 
-        <section className="mt-8">
-          {pools.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center text-slate-400">
-              <p>Aún no perteneces a ninguna sala.</p>
-              <p className="mt-1 text-sm">
-                Espera a que el administrador te envíe una invitación por correo.
-              </p>
+        {pools.length === 0 ? (
+          <div className="rounded-2xl border-t border-slate-100/10 pt-10 text-center">
+            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full border border-slate-100/10 bg-slate-800/50 text-2xl">
+              ✉️
             </div>
-          ) : (
-            <ul className="space-y-2">
-              {pools.map(p => (
-                <li key={p.id}>
-                  <Link
-                    href={`/pools/${p.id}`}
-                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 hover:border-emerald-500/50 transition"
-                  >
-                    <div>
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-xs text-slate-400">Quiniela activa</div>
-                    </div>
-                    <span className="text-slate-500">→</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+            <p className="mx-auto max-w-md leading-relaxed text-slate-400">
+              Aún no perteneces a ninguna sala. Espera a que el administrador te
+              envíe una invitación por correo para unirte a un grupo.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {pools.map(p => (
+              <Link
+                key={p.id}
+                href={`/pools/${p.id}`}
+                className="glass-panel group flex items-center justify-between rounded-2xl p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgb(198_255_61/0.15)] active:scale-[0.98]"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl tracking-wide text-slate-100 transition-colors group-hover:text-[#c6ff3d]">
+                      {p.name}
+                    </h2>
+                    {p.is_sandbox && (
+                      <span className="rounded-full border border-amber-500/30 bg-amber-500/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-amber-400">
+                        Sandbox
+                      </span>
+                    )}
+                  </div>
+                  <span className="w-fit rounded-full border border-[#c6ff3d]/20 bg-slate-800 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-[#c6ff3d]">
+                    Activa
+                  </span>
+                </div>
+                <div className="grid h-10 w-10 place-items-center rounded-full border border-slate-100/20 bg-slate-800 text-slate-100 transition-colors group-hover:bg-[#c6ff3d]/10 group-hover:text-[#c6ff3d]">
+                  →
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
