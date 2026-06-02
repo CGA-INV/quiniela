@@ -203,7 +203,7 @@ export default async function PoolDetailPage({
   const myVote = priceVotes.find(v => v.user_id === user.id)?.price;
   let leadingPrice: number = priceOptions[0];
   for (const p of priceOptions) if (voteTally[p] > voteTally[leadingPrice]) leadingPrice = p;
-  const prizeCount = ranking.length >= 10 ? 3 : 2;
+  const prizeCount = ranking.length >= 50 ? 3 : ranking.length >= 30 ? 2 : 1;
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">
@@ -435,8 +435,8 @@ export default async function PoolDetailPage({
                   <strong className="text-[#c6ff3d]">2 pts</strong> acertar empate · 0 si fallas.
                 </RuleCard>
                 <RuleCard icon="🏆" title="Premios">
-                  Al terminar se reparten <strong className="text-slate-100">2 o 3 premios</strong> según
-                  la cantidad de jugadores: hasta 9 jugadores → 2 premios (1º y 2º); 10 o más → 3 premios (1º, 2º y 3º).
+                  Al terminar se reparten <strong className="text-slate-100">1, 2 o 3 premios</strong> según
+                  la cantidad de jugadores: menos de 30 → 1 premio; 30 a 49 → 2 premios (1º y 2º); 50 o más → 3 premios (1º, 2º y 3º).
                   <span className="mt-1 block text-slate-400">
                     Ahora mismo: <strong className="text-[#c6ff3d]">{ranking.length}</strong>{" "}
                     jugador{ranking.length === 1 ? "" : "es"} →{" "}
