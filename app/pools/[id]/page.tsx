@@ -8,7 +8,7 @@ import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
 import { getCachedUser } from "@/lib/admin-context";
 import { signOut } from "../../login/actions";
-import { saveAllPredictions } from "./actions";
+import { saveAllPredictions, votePrice } from "./actions";
 import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./payments-actions";
 import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 
@@ -70,7 +70,7 @@ export default async function PoolDetailPage({
   const { id } = await params;
   const { error, ok, f, tab } = await searchParams;
   const filter: Filter = (f === "open" || f === "live" || f === "done") ? f : "all";
-  const activeTab: PoolTab = (tab === "partidos" || tab === "ranking" || tab === "pagos") ? tab : "inicio";
+  const activeTab: PoolTab = (tab === "partidos" || tab === "ranking" || tab === "pagos" || tab === "reglas") ? tab : "inicio";
 
   const [supabase, user] = await Promise.all([createClient(), getCachedUser()]);
   if (!user) redirect("/login");
@@ -84,7 +84,7 @@ export default async function PoolDetailPage({
   if (poolErr || !pool) notFound();
 
   // RPC pool_ranking agrega miembros + stats en server-side (1 query, mucho más rápido).
-  const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }] =
+  const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }, priceVotesRes] =
     await Promise.all([
       // Sandbox pool: solo ve sus propios partidos. Pool real: solo globales.
       (pool.is_sandbox
@@ -106,6 +106,10 @@ export default async function PoolDetailPage({
       supabase
         .from("payments")
         .select("id, payer_id, payee_id, proof_url, uploaded_at, validated_at")
+        .eq("pool_id", id),
+      supabase
+        .from("pool_price_votes")
+        .select("user_id, price")
         .eq("pool_id", id),
     ]);
 
@@ -189,6 +193,17 @@ export default async function PoolDetailPage({
   const visibleOpenMatches = filteredMatches.filter(
     m => isPredictionOpen(m.kickoff_at, now),
   ).length;
+
+  // Encuesta de precio (graceful si la tabla aún no existe)
+  const priceVotes = (priceVotesRes?.data ?? []) as { user_id: string; price: number }[];
+  const priceOptions = [3, 4, 5] as const;
+  const voteTally: Record<number, number> = { 3: 0, 4: 0, 5: 0 };
+  for (const v of priceVotes) if (voteTally[v.price] !== undefined) voteTally[v.price]++;
+  const totalVotes = priceVotes.length;
+  const myVote = priceVotes.find(v => v.user_id === user.id)?.price;
+  let leadingPrice: number = priceOptions[0];
+  for (const p of priceOptions) if (voteTally[p] > voteTally[leadingPrice]) leadingPrice = p;
+  const prizeCount = ranking.length >= 10 ? 3 : 2;
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">
@@ -403,6 +418,88 @@ export default async function PoolDetailPage({
                 </form>
               </section>
             )}
+
+            {/* Reglas + encuesta de precio */}
+            <section className={`space-y-4 ${activeTab === "reglas" ? "block" : "hidden lg:block"}`}>
+              <h2 className="text-xl uppercase tracking-tight">Reglas</h2>
+
+              <div className="space-y-3">
+                <RuleCard icon="⏰" title="Predicciones">
+                  Debes llenar el marcador de cada partido{" "}
+                  <strong className="text-slate-100">hasta 1 hora antes</strong> de que empiece.
+                  Al cerrar ese plazo el partido se bloquea y ya no puedes modificar tu predicción.
+                </RuleCard>
+                <RuleCard icon="🎯" title="Puntos">
+                  <strong className="text-[#c6ff3d]">5 pts</strong> marcador exacto ·{" "}
+                  <strong className="text-[#c6ff3d]">3 pts</strong> acertar al ganador ·{" "}
+                  <strong className="text-[#c6ff3d]">2 pts</strong> acertar empate · 0 si fallas.
+                </RuleCard>
+                <RuleCard icon="🏆" title="Premios">
+                  Al terminar se reparten <strong className="text-slate-100">2 o 3 premios</strong> según
+                  la cantidad de jugadores: hasta 9 jugadores → 2 premios (1º y 2º); 10 o más → 3 premios (1º, 2º y 3º).
+                  <span className="mt-1 block text-slate-400">
+                    Ahora mismo: <strong className="text-[#c6ff3d]">{ranking.length}</strong>{" "}
+                    jugador{ranking.length === 1 ? "" : "es"} →{" "}
+                    <strong className="text-[#c6ff3d]">{prizeCount} premios</strong>.
+                  </span>
+                </RuleCard>
+                <RuleCard icon="💵" title="Cómo se paga al ganador">
+                  Cuando termina la fase de grupos, el sistema marca al ganador. En la pestaña{" "}
+                  <strong className="text-slate-100">Pagos</strong> cada jugador sube su comprobante de pago
+                  (foto JPG/PNG/WebP, máx 5MB) y el ganador valida cada comprobante que recibe.
+                </RuleCard>
+              </div>
+
+              {/* Encuesta de precio */}
+              <div className="glass-panel rounded-2xl p-5">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+                  ¿Cuánto debería costar la quiniela?
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Fase de grupos · gana el precio más votado · {totalVotes} voto{totalVotes === 1 ? "" : "s"}
+                </p>
+                <form action={votePrice} className="mt-4 grid grid-cols-3 gap-2">
+                  <input type="hidden" name="pool_id" value={id} />
+                  {priceOptions.map(p => {
+                    const count = voteTally[p];
+                    const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                    const mine = myVote === p;
+                    return (
+                      <button
+                        key={p}
+                        type="submit"
+                        name="price"
+                        value={p}
+                        className={[
+                          "relative overflow-hidden rounded-xl border px-3 py-4 text-center transition active:scale-95",
+                          mine
+                            ? "border-[#c6ff3d] bg-[#c6ff3d]/10"
+                            : "border-slate-700 bg-slate-800/50 hover:border-[#c6ff3d]/40",
+                        ].join(" ")}
+                      >
+                        <span
+                          className="absolute inset-x-0 bottom-0 bg-[#c6ff3d]/15"
+                          style={{ height: `${pct}%` }}
+                          aria-hidden
+                        />
+                        <span className="relative block font-display text-2xl text-[#c6ff3d]">${p}</span>
+                        <span className="relative mt-1 block font-mono text-[10px] uppercase tracking-wider text-slate-400">
+                          {count} ({pct}%){mine ? " · tú" : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </form>
+                {totalVotes > 0 && (
+                  <p className="mt-3 text-center text-sm text-slate-300">
+                    Va ganando: <strong className="text-[#c6ff3d]">${leadingPrice} USD</strong>
+                  </p>
+                )}
+                <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                  Toca una opción para votar · puedes cambiar tu voto
+                </p>
+              </div>
+            </section>
           </main>
 
           {/* Sidebar ranking / Tabla General (estilo Stitch) - sticky en lg+; tab activo en mobile */}
@@ -754,6 +851,28 @@ function Chevron({ size = 16 }: { size?: number }) {
     >
       <path d="M5 8l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function RuleCard({
+  icon,
+  title,
+  children,
+}: {
+  icon: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="glass-panel flex gap-3 rounded-2xl p-4">
+      <span className="text-xl leading-none" aria-hidden>{icon}</span>
+      <div className="min-w-0 text-sm text-slate-300">
+        <h3 className="mb-0.5 font-mono text-xs font-bold uppercase tracking-wider text-slate-100">
+          {title}
+        </h3>
+        {children}
+      </div>
+    </div>
   );
 }
 

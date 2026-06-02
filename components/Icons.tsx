@@ -54,6 +54,16 @@ export function CashIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function RulesIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...baseProps} className={className}>
+      <path d="M5 3h10l4 4v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+      <path d="M14 3v5h5" />
+      <path d="M8 13h8M8 17h6" />
+    </svg>
+  );
+}
+
 export function GridIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg {...baseProps} className={className}>

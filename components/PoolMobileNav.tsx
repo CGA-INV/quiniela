@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { HomeIcon, BallIcon, TrophyIcon, CashIcon } from "./Icons";
+import { HomeIcon, BallIcon, TrophyIcon, CashIcon, RulesIcon } from "./Icons";
 
-export type PoolTab = "inicio" | "partidos" | "ranking" | "pagos";
+export type PoolTab = "inicio" | "partidos" | "ranking" | "pagos" | "reglas";
 
 const TABS: { value: PoolTab; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { value: "inicio", label: "Inicio", Icon: HomeIcon },
   { value: "partidos", label: "Partidos", Icon: BallIcon },
   { value: "ranking", label: "Ranking", Icon: TrophyIcon },
   { value: "pagos", label: "Pagos", Icon: CashIcon },
+  { value: "reglas", label: "Reglas", Icon: RulesIcon },
 ];
 
 export function PoolMobileNav({
@@ -24,7 +25,7 @@ export function PoolMobileNav({
       className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-slate-800 bg-slate-950/90 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegación principal"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {TABS.map(({ value, label, Icon }) => {
           const isActive = active === value;
           const showBadge = value === "pagos" && pagosBadge;

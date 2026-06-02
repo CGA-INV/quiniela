@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isPredictionOpen, PREDICTION_LOCK_MINUTES } from "@/lib/time";
+import { isPredictionOpen } from "@/lib/time";
 
 export async function saveAllPredictions(formData: FormData) {
   const poolId = String(formData.get("pool_id") ?? "");
@@ -80,7 +80,7 @@ export async function saveAllPredictions(formData: FormData) {
   if (rows.length === 0) {
     if (lockedOut > 0) {
       redirect(`/pools/${poolId}?error=${encodeURIComponent(
-        `Ya cerró el plazo (${PREDICTION_LOCK_MINUTES} min antes del kickoff). No se guardó nada.`,
+        `Ya cerró el plazo (1 hora antes del kickoff). No se guardó nada.`,
       )}`);
     }
     redirect(`/pools/${poolId}?error=No%20hay%20predicciones%20v%C3%A1lidas%20para%20guardar`);
@@ -99,4 +99,39 @@ export async function saveAllPredictions(formData: FormData) {
   if (lockedOut > 0) parts.push(`${lockedOut} ya habían cerrado`);
   if (invalid > 0) parts.push(`${invalid} con error`);
   redirect(`/pools/${poolId}?ok=${encodeURIComponent(parts.join(" · "))}`);
+}
+
+/** Voto en la encuesta de precio de la quiniela (3, 4 o 5 USD). Un voto por
+ *  miembro; volver a votar reemplaza el anterior. */
+export async function votePrice(formData: FormData) {
+  const poolId = String(formData.get("pool_id") ?? "");
+  const price = Number(formData.get("price"));
+  if (!poolId) redirect("/pools?error=Sala%20inv%C3%A1lida");
+  if (![3, 4, 5].includes(price)) {
+    redirect(`/pools/${poolId}?tab=reglas&error=Voto%20inv%C3%A1lido`);
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Solo miembros de la sala pueden votar.
+  const { data: member } = await supabase
+    .from("pool_members")
+    .select("user_id")
+    .eq("pool_id", poolId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!member) redirect(`/pools/${poolId}?tab=reglas&error=No%20eres%20miembro%20de%20esta%20sala`);
+
+  const { error } = await supabase
+    .from("pool_price_votes")
+    .upsert({ pool_id: poolId, user_id: user.id, price }, { onConflict: "pool_id,user_id" });
+
+  if (error) {
+    redirect(`/pools/${poolId}?tab=reglas&error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath(`/pools/${poolId}`);
+  redirect(`/pools/${poolId}?tab=reglas&ok=${encodeURIComponent(`Votaste $${price} USD`)}`);
 }
