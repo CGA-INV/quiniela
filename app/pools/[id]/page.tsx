@@ -343,7 +343,7 @@ export default async function PoolDetailPage({
 
             {/* Filtros */}
             {matchList.length > 0 && (
-              <section className={activeTab === "partidos" ? "block" : "hidden lg:block"}>
+              <section className={`overflow-x-hidden ${activeTab === "partidos" ? "block" : "hidden lg:block"}`}>
                 <div className="mb-3 flex items-baseline justify-between">
                   <h2 className="text-xl uppercase tracking-tight">Partidos</h2>
                 </div>
@@ -792,7 +792,7 @@ function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; h
     <details
       open
       className={[
-        "rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
+        "min-w-0 rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
         hot
           ? "border-emerald-500/40 ring-1 ring-emerald-500/20 lg:col-span-2"
           : "border-slate-800",
@@ -954,7 +954,7 @@ function MatchCard({
 
   // Layout: live span 2 cols (más prominente)
   const wrapperClass = [
-    "rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
+    "min-w-0 rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
     live
       ? "md:col-span-2 border-emerald-500/40 ring-1 ring-emerald-500/20"
       : finished
