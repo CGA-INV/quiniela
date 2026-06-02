@@ -70,6 +70,32 @@ h1, h2 {
   letter-spacing: 0.01em;
 }
 
+/* Utilidades del sistema Apple Sports / Pitch Precision */
+.glass-panel {
+  background: rgb(20 48 43 / 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgb(245 241 232 / 0.12);
+}
+.glow-lime {
+  box-shadow: 0 0 25px rgb(198 255 61 / 0.15);
+}
+.electric-glow {
+  text-shadow: 0 0 22px rgb(198 255 61 / 0.45);
+}
+/* Halo atmosférico tipo "estadio bajo reflectores" */
+.atmosphere {
+  background-image: radial-gradient(circle at 50% -10%, #a2d801 0%, transparent 55%);
+}
+.stadium-gradient {
+  background: linear-gradient(
+    to bottom,
+    rgb(10 31 28 / 0) 0%,
+    rgb(10 31 28 / 0.8) 60%,
+    rgb(10 31 28 / 1) 100%
+  );
+}
+
 /* Pulso sutil para indicador "EN VIVO" */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
