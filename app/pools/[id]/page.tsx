@@ -306,7 +306,7 @@ export default async function PoolDetailPage({
                   <summary className="mb-3 flex items-baseline justify-between gap-3 select-none">
                     <div className="flex items-baseline gap-2">
                       <Chevron />
-                      <h2 className="text-lg font-semibold tracking-tight">Posiciones por grupo</h2>
+                      <h2 className="text-xl uppercase tracking-tight">Posiciones por grupo</h2>
                     </div>
                     <span className="text-xs text-slate-500">
                       {groupLabels.length} {groupLabels.length === 1 ? "grupo" : "grupos"}
@@ -330,10 +330,10 @@ export default async function PoolDetailPage({
             {matchList.length > 0 && (
               <section className={activeTab === "partidos" ? "block" : "hidden lg:block"}>
                 <div className="mb-3 flex items-baseline justify-between">
-                  <h2 className="text-lg font-semibold tracking-tight">Partidos</h2>
+                  <h2 className="text-xl uppercase tracking-tight">Partidos</h2>
                 </div>
 
-                <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-1 text-sm">
+                <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-1 text-sm">
                   <FilterTab poolId={id} active={filter} value="all" label="Todos" count={counts.all} />
                   <FilterTab poolId={id} active={filter} value="open" label="Abiertos" count={counts.open} />
                   <FilterTab poolId={id} active={filter} value="live" label="En juego" count={counts.live} />
@@ -392,7 +392,7 @@ export default async function PoolDetailPage({
 
           {/* Sidebar ranking - sticky en lg+; tab activo en mobile */}
           <aside className={`lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto ${activeTab === "ranking" ? "block" : "hidden lg:block"}`}>
-            <details open className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
+            <details open className="rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-5 backdrop-blur">
               <summary className="flex items-baseline justify-between gap-2 select-none">
                 <div className="flex items-baseline gap-2">
                   <Chevron />
@@ -558,7 +558,7 @@ function WinnerView({
           return (
             <li
               key={m.user_id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl px-4 py-3"
             >
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{m.display_name}</div>
@@ -640,7 +640,7 @@ function PayerView({
         Tu pago a {winnerName}
       </h3>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm">
             Estado:{" "}
@@ -741,7 +741,7 @@ function Stat({
     : "text-slate-100";
 
   return (
-    <div className={`rounded-2xl border border-slate-800 bg-slate-900/60 p-5 ring-1 ${ringClass}`}>
+    <div className={`rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-5 ring-1 ${ringClass}`}>
       <div className="text-xs uppercase tracking-wider text-slate-400">{label}</div>
       <div className={`mt-2 ${compact ? "text-base font-semibold truncate" : "text-3xl font-bold"} tabular-nums ${valueColor}`}>
         {value}
@@ -757,7 +757,7 @@ function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; h
     <details
       open
       className={[
-        "rounded-2xl border bg-slate-900/60 p-4 transition",
+        "rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
         hot
           ? "border-emerald-500/40 ring-1 ring-emerald-500/20 lg:col-span-2"
           : "border-slate-800",
@@ -919,7 +919,7 @@ function MatchCard({
 
   // Layout: live span 2 cols (más prominente)
   const wrapperClass = [
-    "rounded-2xl border bg-slate-900/60 p-4 transition",
+    "rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
     live
       ? "md:col-span-2 border-emerald-500/40 ring-1 ring-emerald-500/20"
       : finished
@@ -980,7 +980,7 @@ function MatchCard({
                 min="0"
                 max="20"
                 defaultValue={pred?.pred_home ?? ""}
-                className="w-12 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-center font-mono tabular-nums text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-12 rounded-xl border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-center font-mono text-lg font-bold tabular-nums text-[#c6ff3d] focus:border-[#c6ff3d] focus:outline-none focus:ring-2 focus:ring-[#c6ff3d]/30"
               />
               <span className="text-slate-500">–</span>
               <input
@@ -989,7 +989,7 @@ function MatchCard({
                 min="0"
                 max="20"
                 defaultValue={pred?.pred_away ?? ""}
-                className="w-12 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-center font-mono tabular-nums text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-12 rounded-xl border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-center font-mono text-lg font-bold tabular-nums text-[#c6ff3d] focus:border-[#c6ff3d] focus:outline-none focus:ring-2 focus:ring-[#c6ff3d]/30"
               />
             </div>
           ) : (

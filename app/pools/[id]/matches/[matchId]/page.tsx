@@ -139,13 +139,13 @@ export default async function MatchDetailPage({
             <span>· {fmtDateLong(m.kickoff_at)}</span>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900 p-6">
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur-xl">
             <div className="flex flex-1 items-center justify-end gap-3 text-2xl font-semibold">
               <span>{m.home_team}</span>
               <Flag team={m.home_team} size={32} />
             </div>
             {finished ? (
-              <div className="font-mono text-4xl text-emerald-400">
+              <div className="electric-glow font-mono text-5xl font-bold text-[#c6ff3d]">
                 {m.home_score}–{m.away_score}
               </div>
             ) : (
@@ -179,7 +179,7 @@ export default async function MatchDetailPage({
         )}
 
         <section className="mt-8">
-          <h2 className="text-xl font-semibold">Predicciones</h2>
+          <h2 className="text-2xl uppercase tracking-tight">Predicciones</h2>
           <ul className="mt-3 space-y-1.5">
             {rows.map(r => {
               const isMe = r.user_id === user.id;
@@ -228,7 +228,7 @@ export default async function MatchDetailPage({
 
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3 backdrop-blur-xl">
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
       <div className="mt-0.5 text-xs uppercase tracking-wider text-slate-400">{label}</div>
     </div>
