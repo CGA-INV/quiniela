@@ -273,3 +273,53 @@ export async function togglePoolAdmin(formData: FormData) {
     )}`,
   );
 }
+
+/** Elimina una sala por completo — SOLO super admin.
+ *  Borra en cascada predicciones, pagos, invitaciones, miembros y partidos
+ *  sandbox de la sala (los partidos globales con pool_id null NO se tocan). */
+export async function deletePool(formData: FormData) {
+  const poolId = String(formData.get("pool_id") ?? "");
+  if (!poolId) redirect("/admin?error=ID%20requerido");
+
+  const { supabase, user } = await requireSuper();
+
+  // Captura el nombre ANTES de borrar (para el log).
+  const { data: poolRow } = await supabase
+    .from("pools")
+    .select("name, is_sandbox")
+    .eq("id", poolId)
+    .maybeSingle();
+  if (!poolRow) redirect("/admin?error=Sala%20no%20encontrada");
+
+  // Service role para borrar hijos sin chocar con FK/RLS.
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    redirect(
+      `/admin?error=${encodeURIComponent(
+        e instanceof Error ? e.message : "Service role no configurada",
+      )}`,
+    );
+  }
+
+  // Hijos que referencian pool_id, en orden seguro.
+  for (const table of ["predictions", "payments", "invitations", "pool_members", "matches"]) {
+    const { error } = await admin.from(table).delete().eq("pool_id", poolId);
+    if (error) {
+      redirect(`/admin?error=${encodeURIComponent(`${table}: ${error.message}`)}`);
+    }
+  }
+
+  const { error: delErr } = await admin.from("pools").delete().eq("id", poolId);
+  if (delErr) redirect(`/admin?error=${encodeURIComponent(delErr.message)}`);
+
+  await logActivity(supabase, user.id, "pool_deleted", {
+    pool_id: poolId,
+    pool_name: poolRow!.name,
+    is_sandbox: poolRow!.is_sandbox,
+  });
+
+  revalidatePath("/admin");
+  redirect(`/admin?ok=${encodeURIComponent(`Sala "${poolRow!.name}" eliminada`)}`);
+}

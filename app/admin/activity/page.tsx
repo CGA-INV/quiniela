@@ -65,6 +65,7 @@ export default async function ActivityLogPage({
     { value: "admin_toggled", label: "Promociones" },
     { value: "invite_revoked", label: "Códigos revocados" },
     { value: "pool_created", label: "Salas creadas" },
+    { value: "pool_deleted", label: "Salas eliminadas" },
     { value: "match_deleted", label: "Partidos eliminados" },
     { value: "user_deleted", label: "Usuarios eliminados" },
   ];
@@ -161,6 +162,7 @@ function ActionIcon({ action }: { action: string }) {
     match_created:   { color: "bg-blue-500/20 text-blue-400",       symbol: "+" },
     admin_toggled:   { color: "bg-amber-500/20 text-amber-400",     symbol: "⚡" },
     pool_created:    { color: "bg-blue-500/20 text-blue-400",       symbol: "★" },
+    pool_deleted:    { color: "bg-red-500/20 text-red-400",         symbol: "✕" },
     user_deleted:    { color: "bg-red-500/20 text-red-400",         symbol: "✕" },
   };
   const c = map[action] ?? { color: "bg-slate-700/50 text-slate-400", symbol: "·" };
@@ -289,6 +291,14 @@ function ActionDescription({
           {m.invite_code && (
             <span className="text-slate-500"> con código <span className="font-mono">{m.invite_code}</span></span>
           )}
+        </p>
+      );
+    case "pool_deleted":
+      return (
+        <p className="text-sm">
+          <strong className="text-slate-100">{actor}</strong>{" "}
+          <span className="text-slate-400">eliminó la sala</span>{" "}
+          <span className="text-slate-200 line-through">{m.pool_name}</span>
         </p>
       );
     default:

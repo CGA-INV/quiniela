@@ -10,6 +10,7 @@ import {
   togglePoolAdmin,
   addExistingMember,
   deleteUser,
+  deletePool,
 } from "./actions";
 import { AdminNav } from "@/components/AdminNav";
 
@@ -326,6 +327,23 @@ function PoolCard({
             </span>
           </div>
         </div>
+        {isSuper && (
+          <details className="shrink-0">
+            <summary className="cursor-pointer select-none text-xs text-slate-500 hover:text-red-400">
+              eliminar sala
+            </summary>
+            <form action={deletePool} className="mt-1">
+              <input type="hidden" name="pool_id" value={pool.id} />
+              <button
+                type="submit"
+                className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/20"
+                title="Borra la sala y TODOS sus datos: miembros, predicciones, pagos, invitaciones y partidos sandbox."
+              >
+                Sí, eliminar sala
+              </button>
+            </form>
+          </details>
+        )}
       </div>
 
       <form action={generateInvitation} className="mt-4 flex flex-col sm:flex-row gap-2">

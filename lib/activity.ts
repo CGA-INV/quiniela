@@ -10,6 +10,7 @@ export type ActivityAction =
   | "match_created"
   | "admin_toggled"
   | "pool_created"
+  | "pool_deleted"
   | "user_deleted";
 
 export type ActivityMeta = Record<string, unknown>;
