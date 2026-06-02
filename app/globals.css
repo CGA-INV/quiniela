@@ -1,22 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
-  --foreground: #f1f5f9;
+  --background: #0a1f1c;
+  --foreground: #f5f1e8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Surface tonal scale (cards, elev) */
-  --color-surface-1: #0f172a;
-  --color-surface-2: #1e293b;
-  --color-surface-elev: rgb(15 23 42 / 0.6);
+  /* Fonts — Apple Sports / Pitch Precision */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "Cascadia Code", monospace;
+  --font-display: var(--font-anton), "Geist", sans-serif;
 
-  /* Brand */
-  --color-brand: #10b981;
-  --color-brand-glow: rgb(16 185 129 / 0.15);
+  /* Surface tonal scale (cards, elev) */
+  --color-surface-1: #14302b;
+  --color-surface-2: #1e463e;
+  --color-surface-elev: rgb(20 48 43 / 0.6);
+
+  /* Brand — electric lime */
+  --color-brand: #c6ff3d;
+  --color-brand-glow: rgb(198 255 61 / 0.15);
 
   /* Estado */
   --color-live: #f59e0b;
@@ -27,13 +32,42 @@
   --radius-bento: 1.25rem;
 }
 
+/* Re-skin global: remapeo de la paleta Tailwind al sistema Apple Sports.
+   slate -> verde medianoche; emerald -> lima eléctrica.
+   Esto re-tematiza todas las clases existentes sin tocar los componentes. */
+@theme {
+  --color-slate-50: #f7faf9;
+  --color-slate-100: #f5f1e8;
+  --color-slate-200: #dde6e2;
+  --color-slate-300: #b9c9c3;
+  --color-slate-400: #8ba39c;
+  --color-slate-500: #6f8d85;
+  --color-slate-600: #436159;
+  --color-slate-700: #1e463e;
+  --color-slate-800: #14302b;
+  --color-slate-900: #0e2620;
+  --color-slate-950: #0a1f1c;
+
+  --color-emerald-300: #e2ff9e;
+  --color-emerald-400: #d4ff66;
+  --color-emerald-500: #c6ff3d;
+  --color-emerald-600: #a6e017;
+  --color-emerald-700: #7fae00;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
+}
+
+/* Títulos con Anton para el look "broadcast" deportivo */
+h1, h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 /* Pulso sutil para indicador "EN VIVO" */
