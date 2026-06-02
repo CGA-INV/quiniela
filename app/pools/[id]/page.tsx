@@ -266,8 +266,23 @@ export default async function PoolDetailPage({
               </div>
             )}
 
-            {/* KPI strip */}
-            <section className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${activeTab === "inicio" ? "block" : "hidden lg:grid"}`}>
+            {/* Hero estilo Apple Sports: código + nombre + rank */}
+            <section className={`flex items-end justify-between gap-3 ${activeTab === "inicio" ? "flex" : "hidden lg:flex"}`}>
+              <div className="min-w-0">
+                <div className="mb-1 flex items-center gap-1.5">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-slate-400">Código:</span>
+                  <span className="font-mono text-[11px] uppercase tracking-wide text-slate-200">{pool.invite_code}</span>
+                </div>
+                <h2 className="truncate text-4xl uppercase tracking-tight">{pool.name}</h2>
+              </div>
+              <div className="shrink-0 text-right">
+                <span className="block font-mono text-[11px] uppercase tracking-wider text-slate-400">Rank</span>
+                <div className="font-display text-6xl leading-none text-[#c6ff3d]">{myRank > 0 ? myRank : "—"}</div>
+              </div>
+            </section>
+
+            {/* KPI strip editorial (celdas divididas) */}
+            <section className={`grid gap-px overflow-hidden rounded-2xl bg-slate-100/10 backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-4 ${activeTab === "inicio" ? "block" : "hidden lg:grid"}`}>
               <Stat
                 label="Tu posición"
                 value={myRank > 0 ? `#${myRank}` : "—"}
@@ -390,86 +405,110 @@ export default async function PoolDetailPage({
             )}
           </main>
 
-          {/* Sidebar ranking - sticky en lg+; tab activo en mobile */}
+          {/* Sidebar ranking / Tabla General (estilo Stitch) - sticky en lg+; tab activo en mobile */}
           <aside className={`lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto ${activeTab === "ranking" ? "block" : "hidden lg:block"}`}>
-            <details open className="rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-5 backdrop-blur">
-              <summary className="flex items-baseline justify-between gap-2 select-none">
-                <div className="flex items-baseline gap-2">
-                  <Chevron />
-                  <h2 className="font-semibold tracking-tight">Ranking</h2>
-                </div>
-                <span className="text-xs text-slate-500">
-                  Tú: <span className="text-emerald-400 font-bold">{myStats.total}</span>
-                  {myRank > 0 && <> · #{myRank}</>}
-                </span>
-              </summary>
-              <div className="mt-3 hidden">
-                <span className="text-xs text-slate-500">
-                  {ranking.length} {ranking.length === 1 ? "jugador" : "jugadores"}
-                </span>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5 backdrop-blur-xl">
+              <div className="mb-6 text-center">
+                <h2 className="text-3xl uppercase italic tracking-tight">Tabla general</h2>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                  {pool.name} • {ranking.length} {ranking.length === 1 ? "jugador" : "jugadores"}
+                </p>
               </div>
 
               {ranking.length === 0 ? (
                 <p className="mt-4 text-sm text-slate-400">Sin miembros todavía.</p>
               ) : (
-                <ol className="mt-4 space-y-1">
-                  {ranking.map((r, i) => {
-                    const isMe = r.user_id === user.id;
-                    return (
-                      <li
-                        key={r.user_id}
-                        className={[
-                          "rounded-lg px-2 py-2 transition",
-                          isMe
-                            ? "bg-emerald-500/10 border border-emerald-500/30"
-                            : "border border-transparent hover:bg-slate-800/40",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-start gap-2 min-w-0 flex-1">
-                            <span className={[
-                              "shrink-0 w-5 text-right text-xs tabular-nums pt-0.5",
-                              i === 0 ? "text-amber-400 font-semibold"
-                              : i === 1 ? "text-slate-300 font-semibold"
-                              : i === 2 ? "text-orange-400 font-semibold"
-                              : "text-slate-500",
-                            ].join(" ")}>
-                              {i + 1}
-                            </span>
-                            <span className="text-sm break-words">
-                              {r.display_name}
-                              {isMe && <span className="ml-1 text-xs text-emerald-400">(tú)</span>}
-                            </span>
+                <>
+                  {/* Podio top 3 */}
+                  <div className="mb-8 flex items-end justify-center gap-3">
+                    {[1, 0, 2].map(slot => {
+                      const r = ranking[slot];
+                      if (!r) return <div key={slot} className="flex-1" />;
+                      const isLeader = slot === 0;
+                      const isMe = r.user_id === user.id;
+                      const initials = r.display_name.split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+                      const ring = isLeader
+                        ? "border-4 border-[#c6ff3d]"
+                        : slot === 1 ? "border-2 border-slate-100/30" : "border-2 border-amber-600/40";
+                      const dim = isLeader ? "h-24 w-24" : "h-16 w-16";
+                      return (
+                        <div key={slot} className="flex flex-1 flex-col items-center">
+                          <div className="relative mb-3">
+                            <div className={`grid ${dim} place-items-center rounded-full ${ring} ${isLeader ? "glow-lime" : ""} bg-slate-800 font-display ${isLeader ? "text-2xl text-[#c6ff3d]" : "text-lg text-slate-200"}`}>
+                              {initials}
+                            </div>
+                            {isLeader ? (
+                              <>
+                                <span className="material-symbols-outlined absolute -top-5 left-1/2 -translate-x-1/2 text-3xl text-[#c6ff3d]" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-[#c6ff3d] px-3 py-0.5 font-display text-[10px] uppercase italic text-[#0a1f1c]">Líder</span>
+                              </>
+                            ) : (
+                              <span className="absolute -bottom-1 left-1/2 grid h-6 w-6 -translate-x-1/2 place-items-center rounded-full bg-slate-100 font-display text-xs italic text-[#0a1f1c]">{slot === 1 ? 2 : 3}</span>
+                            )}
                           </div>
-                          <span className={[
-                            "font-mono tabular-nums text-sm",
-                            isMe ? "text-emerald-400 font-bold" : "text-slate-300",
-                          ].join(" ")}>
-                            {r.total}
-                          </span>
+                          <p className={`mb-1 truncate max-w-full font-mono text-[10px] uppercase ${isLeader ? "font-bold tracking-wider text-[#c6ff3d]" : "text-slate-400"}`}>
+                            {r.display_name}{isMe ? " (tú)" : ""}
+                          </p>
+                          <p className={`font-display tabular-nums ${isLeader ? "text-4xl text-[#c6ff3d]" : "text-2xl text-slate-100"}`}>{r.total}</p>
                         </div>
-                        {(r.exactos > 0 || r.ganador > 0 || r.empate > 0) && (
-                          <div className="ml-7 mt-0.5 text-xs text-slate-500 flex flex-wrap gap-x-2">
-                            {r.exactos > 0 && (
-                              <span><span className="text-emerald-400 font-medium">{r.exactos}</span> exacto{r.exactos === 1 ? "" : "s"}</span>
-                            )}
-                            {r.ganador > 0 && (
-                              <span><span className="text-emerald-300 font-medium">{r.ganador}</span> ganador</span>
-                            )}
-                            {r.empate > 0 && (
-                              <span><span className="text-blue-400 font-medium">{r.empate}</span> empate</span>
-                            )}
+                      );
+                    })}
+                  </div>
+
+                  {/* Lista (posiciones 4+) */}
+                  {ranking.length > 3 && (
+                    <div className="space-y-1">
+                      <div className="mb-2 flex items-center border-b border-slate-100/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-slate-400">
+                        <span className="w-7">Pos</span>
+                        <span className="flex-1">Participante</span>
+                        <span className="w-16 text-right">Pts</span>
+                      </div>
+                      {ranking.slice(3).map((r, i) => {
+                        const pos = i + 4;
+                        const isMe = r.user_id === user.id;
+                        const initials = r.display_name.split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+                        return (
+                          <div
+                            key={r.user_id}
+                            className={[
+                              "flex items-center rounded-xl px-3 py-3 transition-colors",
+                              isMe
+                                ? "glow-lime border border-[#c6ff3d]/30 bg-slate-800/70"
+                                : "border border-white/5 bg-slate-800/40 hover:bg-slate-800/70",
+                            ].join(" ")}
+                          >
+                            <span className={`w-7 font-display italic ${isMe ? "text-[#c6ff3d]" : "text-slate-400"}`}>
+                              {String(pos).padStart(2, "0")}
+                            </span>
+                            <div className="flex min-w-0 flex-1 items-center gap-3">
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-700 font-mono text-[10px] text-slate-200">
+                                {initials}
+                              </span>
+                              <span className="min-w-0">
+                                <span className={`block truncate text-sm font-bold tracking-tight ${isMe ? "text-[#c6ff3d]" : "text-slate-100"}`}>
+                                  {r.display_name}{isMe ? " (tú)" : ""}
+                                </span>
+                                {(r.exactos > 0 || r.ganador > 0 || r.empate > 0) && (
+                                  <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+                                    {r.exactos} exactos · {r.ganador} ganador · {r.empate} empate
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <span className={`w-16 text-right font-display tabular-nums ${isMe ? "text-2xl text-[#c6ff3d]" : "text-lg text-slate-100"}`}>
+                              {r.total}
+                            </span>
                           </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ol>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
-              <p className="mt-4 border-t border-slate-800 pt-3 text-xs text-slate-500">
-                5 pts marcador exacto · 3 pts ganador · 2 pts empate
+              <p className="mt-6 border-t border-slate-800 pt-3 text-center font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                5 pts exacto · 3 pts ganador · 2 pts empate
               </p>
-            </details>
+            </div>
           </aside>
         </div>
       </div>
@@ -731,19 +770,15 @@ function Stat({
   accent?: "emerald" | "amber" | "slate";
   compact?: boolean;
 }) {
-  const ringClass =
-    accent === "emerald" ? "ring-emerald-500/20"
-    : accent === "amber" ? "ring-amber-500/20"
-    : "ring-slate-700/50";
   const valueColor =
-    accent === "emerald" ? "text-emerald-400"
+    accent === "emerald" ? "text-[#c6ff3d]"
     : accent === "amber" ? "text-amber-400"
     : "text-slate-100";
 
   return (
-    <div className={`rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-5 ring-1 ${ringClass}`}>
-      <div className="text-xs uppercase tracking-wider text-slate-400">{label}</div>
-      <div className={`mt-2 ${compact ? "text-base font-semibold truncate" : "text-3xl font-bold"} tabular-nums ${valueColor}`}>
+    <div className="bg-slate-900/80 p-5">
+      <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">{label}</div>
+      <div className={`mt-2 tabular-nums ${valueColor} ${compact ? "truncate text-base font-semibold" : "font-display text-3xl"}`}>
         {value}
       </div>
       {sub && <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>}

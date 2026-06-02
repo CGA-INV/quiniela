@@ -29,6 +29,16 @@ export default async function PoolsPage({
   const pools: PoolRow[] = ((memberships ?? []) as unknown as Membership[])
     .flatMap(m => (Array.isArray(m.pools) ? m.pools : m.pools ? [m.pools] : []));
 
+  // Conteo de miembros por sala (para mostrar "N miembros" como en Stitch)
+  const poolIds = pools.map(p => p.id);
+  const { data: allMembers } = poolIds.length
+    ? await supabase.from("pool_members").select("pool_id").in("pool_id", poolIds)
+    : { data: [] as { pool_id: string }[] };
+  const countByPool = new Map<string, number>();
+  for (const row of (allMembers ?? []) as { pool_id: string }[]) {
+    countByPool.set(row.pool_id, (countByPool.get(row.pool_id) ?? 0) + 1);
+  }
+
   return (
     <main className="relative min-h-screen bg-[#0a1f1c] text-slate-100 pb-16">
       <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-[0.12]" />
@@ -109,9 +119,17 @@ export default async function PoolsPage({
                       </span>
                     )}
                   </div>
-                  <span className="w-fit rounded-full border border-[#c6ff3d]/20 bg-slate-800 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-[#c6ff3d]">
-                    Activa
-                  </span>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <span className="rounded-full border border-[#c6ff3d]/20 bg-slate-800 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-[#c6ff3d]">
+                      Activa
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[16px]">group</span>
+                      <span className="font-mono text-xs tabular-nums">
+                        {countByPool.get(p.id) ?? 1} miembros
+                      </span>
+                    </span>
+                  </div>
                 </div>
                 <div className="grid h-10 w-10 place-items-center rounded-full border border-slate-100/20 bg-slate-800 text-slate-100 transition-colors group-hover:bg-[#c6ff3d]/10 group-hover:text-[#c6ff3d]">
                   <span className="material-symbols-outlined">arrow_forward</span>
