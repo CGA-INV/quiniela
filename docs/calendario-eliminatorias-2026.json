@@ -1,0 +1,39 @@
+[
+  { "match_no": 73, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Los Angeles Stadium", "city": "Los Ángeles", "kickoff_at": "2026-06-28T19:00:00Z" },
+  { "match_no": 74, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Houston Stadium", "city": "Houston", "kickoff_at": "2026-06-29T19:00:00Z" },
+  { "match_no": 75, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Boston Stadium", "city": "Boston", "kickoff_at": "2026-06-29T20:30:00Z" },
+  { "match_no": 76, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Estadio Monterrey", "city": "Monterrey", "kickoff_at": "2026-06-30T01:00:00Z" },
+  { "match_no": 77, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Dallas Stadium", "city": "Dallas", "kickoff_at": "2026-06-30T17:00:00Z" },
+  { "match_no": 78, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "New York New Jersey Stadium", "city": "Nueva York/Nueva Jersey", "kickoff_at": "2026-06-30T21:00:00Z" },
+  { "match_no": 79, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Estadio Azteca", "city": "Ciudad de México", "kickoff_at": "2026-07-01T01:00:00Z" },
+  { "match_no": 80, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Atlanta Stadium", "city": "Atlanta", "kickoff_at": "2026-07-01T16:00:00Z" },
+  { "match_no": 81, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Seattle Stadium", "city": "Seattle", "kickoff_at": "2026-07-01T20:00:00Z" },
+  { "match_no": 82, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "San Francisco Bay Area Stadium", "city": "San Francisco", "kickoff_at": "2026-07-01T20:00:00Z" },
+  { "match_no": 83, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Los Angeles Stadium", "city": "Los Ángeles", "kickoff_at": "2026-07-02T19:00:00Z" },
+  { "match_no": 84, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Toronto Stadium", "city": "Toronto", "kickoff_at": "2026-07-02T23:00:00Z" },
+  { "match_no": 85, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "BC Place", "city": "Vancouver", "kickoff_at": "2026-07-03T03:00:00Z" },
+  { "match_no": 86, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Dallas Stadium", "city": "Dallas", "kickoff_at": "2026-07-03T18:00:00Z" },
+  { "match_no": 87, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Miami Stadium", "city": "Miami", "kickoff_at": "2026-07-03T22:00:00Z" },
+  { "match_no": 88, "stage": "round_of_32", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Kansas City Stadium", "city": "Kansas City", "kickoff_at": "2026-07-04T01:30:00Z" },
+
+  { "match_no": 89, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Houston Stadium", "city": "Houston", "kickoff_at": "2026-07-04T17:00:00Z" },
+  { "match_no": 90, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Philadelphia Stadium", "city": "Filadelfia", "kickoff_at": "2026-07-04T21:00:00Z" },
+  { "match_no": 91, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "New York New Jersey Stadium", "city": "Nueva York/Nueva Jersey", "kickoff_at": "2026-07-05T20:00:00Z" },
+  { "match_no": 92, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Estadio Azteca", "city": "Ciudad de México", "kickoff_at": "2026-07-06T00:00:00Z" },
+  { "match_no": 93, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Dallas Stadium", "city": "Dallas", "kickoff_at": "2026-07-06T19:00:00Z" },
+  { "match_no": 94, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Seattle Stadium", "city": "Seattle", "kickoff_at": "2026-07-07T00:00:00Z" },
+  { "match_no": 95, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Atlanta Stadium", "city": "Atlanta", "kickoff_at": "2026-07-07T16:00:00Z" },
+  { "match_no": 96, "stage": "round_of_16", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "BC Place", "city": "Vancouver", "kickoff_at": "2026-07-07T20:00:00Z" },
+
+  { "match_no": 97, "stage": "quarter", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Boston Stadium", "city": "Boston", "kickoff_at": "2026-07-09T20:00:00Z" },
+  { "match_no": 98, "stage": "quarter", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Los Angeles Stadium", "city": "Los Ángeles", "kickoff_at": "2026-07-10T19:00:00Z" },
+  { "match_no": 99, "stage": "quarter", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Miami Stadium", "city": "Miami", "kickoff_at": "2026-07-11T20:00:00Z" },
+  { "match_no": 100, "stage": "quarter", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Kansas City Stadium", "city": "Kansas City", "kickoff_at": "2026-07-12T01:00:00Z" },
+
+  { "match_no": 101, "stage": "semi", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Dallas Stadium", "city": "Dallas", "kickoff_at": "2026-07-14T19:00:00Z" },
+  { "match_no": 102, "stage": "semi", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Atlanta Stadium", "city": "Atlanta", "kickoff_at": "2026-07-15T19:00:00Z" },
+
+  { "match_no": 103, "stage": "third_place", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "Miami Stadium", "city": "Miami", "kickoff_at": "2026-07-18T21:00:00Z" },
+
+  { "match_no": 104, "stage": "final", "home_team": "Local por definir", "away_team": "Visitante por definir", "venue": "New York New Jersey Stadium", "city": "Nueva York/Nueva Jersey", "kickoff_at": "2026-07-19T19:00:00Z" }
+]
