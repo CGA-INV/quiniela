@@ -14,6 +14,7 @@ import Image from "next/image";
 import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
 import { WinnerCelebration } from "@/components/WinnerCelebration";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -218,8 +219,18 @@ export default async function PoolDetailPage({
   const needsVote = !myVote || !myTiming;
   const prizeCount = ranking.length >= 50 ? 3 : ranking.length >= 30 ? 2 : 1;
 
+  // Fondo según la pestaña activa
+  const tabBackground: Record<PoolTab, string> = {
+    inicio: "/imagen/balon-original.webp",
+    partidos: "/imagen/balon-original.webp",
+    ranking: "/imagen/trofeo.webp",
+    pagos: "/imagen/estadio.webp",
+    reglas: "/imagen/balon.webp",
+  };
+
   return (
     <main className="min-h-dvh text-slate-100">
+      <ScreenBackground src={tabBackground[activeTab]} />
       {/* Header sticky con backdrop blur */}
       <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
@@ -376,7 +387,7 @@ export default async function PoolDetailPage({
                   <h2 className="text-xl uppercase tracking-tight">Partidos</h2>
                 </div>
 
-                <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-1 text-sm">
+                <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/35 backdrop-blur-xl p-1 text-sm">
                   <FilterTab poolId={id} active={filter} value="all" label="Todos" count={counts.all} />
                   <FilterTab poolId={id} active={filter} value="open" label="Abiertos" count={counts.open} />
                   <FilterTab poolId={id} active={filter} value="live" label="En juego" count={counts.live} />
@@ -481,7 +492,7 @@ export default async function PoolDetailPage({
 
           {/* Sidebar ranking / Tabla General (estilo Stitch) - sticky en lg+; tab activo en mobile */}
           <aside className={`lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto ${activeTab === "ranking" ? "block" : "hidden lg:block"}`}>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5 backdrop-blur-xl">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/35 p-5 backdrop-blur-xl">
               <div className="mb-6 text-center">
                 <h2 className="text-3xl uppercase italic tracking-tight">Tabla general</h2>
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
@@ -683,7 +694,7 @@ function WinnerView({
           return (
             <li
               key={m.user_id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/35 backdrop-blur-xl px-4 py-3"
             >
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{m.display_name}</div>
@@ -765,7 +776,7 @@ function PayerView({
         Tu pago a {winnerName}
       </h3>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-4">
+      <div className="rounded-xl border border-slate-800 bg-slate-900/35 backdrop-blur-xl p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm">
             Estado:{" "}
@@ -884,7 +895,7 @@ function Stat({
     : "text-slate-100";
 
   return (
-    <div className="bg-slate-900/80 p-5">
+    <div className="bg-slate-900/55 p-5">
       <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">{label}</div>
       <div className={`mt-2 tabular-nums ${valueColor} ${compact ? "truncate text-base font-semibold" : "font-display text-3xl"}`}>
         {value}
@@ -900,7 +911,7 @@ function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; h
     <details
       open
       className={[
-        "min-w-0 rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
+        "min-w-0 rounded-2xl border bg-slate-900/35 backdrop-blur-xl p-4 transition",
         hot
           ? "border-emerald-500/40 ring-1 ring-emerald-500/20 lg:col-span-2"
           : "border-slate-800",
@@ -1062,7 +1073,7 @@ function MatchCard({
 
   // Layout: live span 2 cols (más prominente)
   const wrapperClass = [
-    "min-w-0 rounded-2xl border bg-slate-900/50 backdrop-blur-xl p-4 transition",
+    "min-w-0 rounded-2xl border bg-slate-900/35 backdrop-blur-xl p-4 transition",
     live
       ? "md:col-span-2 border-emerald-500/40 ring-1 ring-emerald-500/20"
       : finished

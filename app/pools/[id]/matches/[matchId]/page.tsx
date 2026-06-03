@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fmtDateLong, isPredictionOpen } from "@/lib/time";
 import { Flag } from "@/components/Flag";
 import { getCachedUser } from "@/lib/admin-context";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 type Match = {
   id: string;
@@ -119,6 +120,7 @@ export default async function MatchDetailPage({
 
   return (
     <main className="min-h-screen text-slate-100 px-6 py-10">
+      <ScreenBackground src="/imagen/balon-original.webp" />
       <div className="mx-auto max-w-2xl">
         <Link
           href={`/pools/${poolId}`}
@@ -139,7 +141,7 @@ export default async function MatchDetailPage({
             <span>· {fmtDateLong(m.kickoff_at)}</span>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur-xl">
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/38 p-6 backdrop-blur-xl">
             <div className="flex flex-1 items-center justify-end gap-3 text-2xl font-semibold">
               <span>{m.home_team}</span>
               <Flag team={m.home_team} size={32} />
@@ -184,7 +186,7 @@ export default async function MatchDetailPage({
             {rows.map(r => {
               const isMe = r.user_id === user.id;
               const color = !r.predicted
-                ? "border-slate-800 bg-slate-900/50 text-slate-500"
+                ? "border-slate-800 bg-slate-900/38 text-slate-500"
                 : r.points === 5
                 ? "border-emerald-500/40 bg-emerald-500/10"
                 : r.points === 3
@@ -228,7 +230,7 @@ export default async function MatchDetailPage({
 
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3 backdrop-blur-xl">
+    <div className="rounded-xl border border-slate-800 bg-slate-900/38 p-3 backdrop-blur-xl">
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
       <div className="mt-0.5 text-xs uppercase tracking-wider text-slate-400">{label}</div>
     </div>

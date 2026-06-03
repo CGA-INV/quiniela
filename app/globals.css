@@ -89,7 +89,7 @@ h1, h2 {
 
 /* Utilidades del sistema Apple Sports / Pitch Precision */
 .glass-panel {
-  background: rgb(20 48 43 / 0.6);
+  background: rgb(20 48 43 / 0.42);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgb(245 241 232 / 0.12);

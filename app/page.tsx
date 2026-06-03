@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -9,6 +10,7 @@ export default async function Home() {
 
   return (
     <main className="relative flex h-screen flex-col justify-end overflow-hidden text-slate-100">
+      <ScreenBackground src="/imagen/estadio.webp" />
       {/* Marca */}
       <header className="fixed left-0 top-0 z-20 flex w-full items-center justify-between px-5 py-4">
         <div className="font-display text-3xl uppercase italic tracking-tighter text-[#c6ff3d]">

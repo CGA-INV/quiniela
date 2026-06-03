@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin-context";
 import { AdminNav } from "@/components/AdminNav";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 type LogRow = {
   id: string;
@@ -73,6 +74,7 @@ export default async function ActivityLogPage({
 
   return (
     <main className="min-h-dvh text-slate-100">
+      <ScreenBackground src="/imagen/cancha.webp" />
       <AdminNav
         active="bitacora"
         isSuper={true}
@@ -84,7 +86,7 @@ export default async function ActivityLogPage({
       />
 
       <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-1 text-sm">
+        <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/45 p-1 text-sm">
           {filters.map(f => {
             const isActive = active === f.value;
             return (
@@ -117,7 +119,7 @@ export default async function ActivityLogPage({
               return (
                 <li
                   key={r.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3"
+                  className="rounded-xl border border-slate-800 bg-slate-900/45 px-4 py-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">

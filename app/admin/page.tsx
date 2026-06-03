@@ -13,6 +13,7 @@ import {
   deletePool,
 } from "./actions";
 import { AdminNav } from "@/components/AdminNav";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 type Pool = {
   id: string;
@@ -101,6 +102,7 @@ export default async function AdminPage({
 
   return (
     <main className="min-h-dvh text-slate-100">
+      <ScreenBackground src="/imagen/cancha.webp" />
       <AdminNav
         active="salas"
         isSuper={isSuper}
@@ -120,7 +122,7 @@ export default async function AdminPage({
         )}
 
         {/* Crear sala (super y pool admin) */}
-        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/45 p-5">
           <h2 className="font-semibold tracking-tight">Crear nueva sala</h2>
             <form action={createPool} className="mt-4 space-y-3">
               <div className="flex flex-col sm:flex-row gap-3">
@@ -209,7 +211,7 @@ export default async function AdminPage({
                 return (
                   <li
                     key={inv.id}
-                    className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3"
+                    className="rounded-xl border border-slate-800 bg-slate-900/45 px-4 py-3"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -258,7 +260,7 @@ export default async function AdminPage({
                   return (
                     <li
                       key={p.id}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm"
+                      className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/45 px-3 py-2 text-sm"
                     >
                       <span className="truncate">
                         {p.display_name}
@@ -314,7 +316,7 @@ function PoolCard({
   const candidates = allProfiles.filter(p => !memberIds.has(p.id));
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/45 p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <Link href={`/pools/${pool.id}`} className="text-lg font-semibold tracking-tight hover:text-emerald-400">

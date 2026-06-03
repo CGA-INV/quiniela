@@ -6,6 +6,7 @@ import { fmtDate, timeUntil } from "@/lib/time";
 import { Flag } from "@/components/Flag";
 import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches } from "./actions";
 import { AdminNav } from "@/components/AdminNav";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 const JSON_EXAMPLE = `[
   {
@@ -171,6 +172,7 @@ export default async function AdminMatchesPage({
 
   return (
     <main className="min-h-dvh text-slate-100">
+      <ScreenBackground src="/imagen/cancha.webp" />
       <AdminNav
         active="partidos"
         isSuper={isSuper}
@@ -339,7 +341,7 @@ export default async function AdminMatchesPage({
           {/* Filtros: status y scope */}
           <div className="mb-4 flex flex-col gap-2">
             {/* Status (siempre visible) */}
-            <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-1 text-xs">
+            <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/45 p-1 text-xs">
               <FilterTab href={buildHref({ st: "open" })} label="Por jugar" active={activeStatus === "open"} count={statusCounts.open} />
               <FilterTab href={buildHref({ st: "live" })} label="En vivo" active={activeStatus === "live"} count={statusCounts.live} />
               <FilterTab href={buildHref({ st: "done" })} label="Finalizados" active={activeStatus === "done"} count={statusCounts.done} />
@@ -347,7 +349,7 @@ export default async function AdminMatchesPage({
             </div>
             {/* Scope (solo cuando hay sandbox) */}
             {sandboxList.length > 0 && (
-              <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-1 text-xs">
+              <div className="flex flex-wrap gap-1 rounded-lg border border-slate-800 bg-slate-900/45 p-1 text-xs">
                 <FilterTab href={buildHref({ scope: "all" })} label="Todos los partidos" active={activeScope === "all"} count={matchListAll.length} />
                 <FilterTab href={buildHref({ scope: "global" })} label="📡 Global" active={activeScope === "global"} count={matchListAll.filter(m => m.pool_id === null).length} />
                 {sandboxList.map(p => (

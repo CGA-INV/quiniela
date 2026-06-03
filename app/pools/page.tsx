@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../login/actions";
 import { isAdminEmail } from "@/lib/auth";
 import { getCachedUser } from "@/lib/admin-context";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 export default async function PoolsPage({
   searchParams,
@@ -41,6 +42,7 @@ export default async function PoolsPage({
 
   return (
     <main className="relative min-h-screen text-slate-100 pb-16">
+      <ScreenBackground src="/imagen/aficion.webp" />
       <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-[0.12]" />
 
       {/* Top app bar */}

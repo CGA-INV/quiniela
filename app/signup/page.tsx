@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signUpWithCode } from "./actions";
+import { ScreenBackground } from "@/components/ScreenBackground";
 
 export default async function SignupPage({
   searchParams,
@@ -10,6 +11,7 @@ export default async function SignupPage({
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-5 text-slate-100">
+      <ScreenBackground src="/imagen/balon.webp" />
       <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-20" />
 
       <div className="relative z-10 flex w-full max-w-md flex-col gap-8">
