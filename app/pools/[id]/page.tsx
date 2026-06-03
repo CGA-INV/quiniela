@@ -320,36 +320,38 @@ export default async function PoolDetailPage({
               </div>
             </section>
 
-            {/* KPI strip editorial (celdas divididas) */}
-            <section className={`grid gap-px overflow-hidden rounded-2xl bg-slate-100/10 backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-4 ${activeTab === "inicio" ? "block" : "hidden lg:grid"}`}>
-              <Stat
-                label="Tu posición"
-                value={myRank > 0 ? `#${myRank}` : "—"}
-                sub={`de ${ranking.length}`}
-                accent="emerald"
-              />
-              <Stat
-                label="Tus puntos"
-                value={myStats.total}
-                sub={
-                  myStats.exactos > 0 || myStats.ganador > 0 || myStats.empate > 0
-                    ? `${myStats.exactos} exactos · ${myStats.ganador} ganador · ${myStats.empate} empate`
-                    : "sin puntos aún"
-                }
-                accent="emerald"
-              />
+            {/* KPIs agrupados (translúcidos) */}
+            <section className={`space-y-3 ${activeTab === "inicio" ? "block" : "hidden lg:block"}`}>
+              <div className="grid grid-cols-3 gap-3">
+                <Stat
+                  label="Posición"
+                  value={myRank > 0 ? `#${myRank}` : "—"}
+                  sub={`de ${ranking.length}`}
+                  accent="emerald"
+                />
+                <Stat
+                  label="Puntos"
+                  value={myStats.total}
+                  sub={
+                    myStats.exactos > 0 || myStats.ganador > 0 || myStats.empate > 0
+                      ? `${myStats.exactos} ex · ${myStats.ganador} gan · ${myStats.empate} emp`
+                      : "sin puntos"
+                  }
+                  accent="emerald"
+                />
+                <Stat
+                  label="Por predecir"
+                  value={counts.open}
+                  sub={counts.open > 0 ? "no te quedes" : "al día"}
+                  accent={counts.open > 0 ? "amber" : "slate"}
+                />
+              </div>
               <Stat
                 label="Próximo partido"
                 value={nextOpen ? `${nextOpen.home_team} vs ${nextOpen.away_team}` : "—"}
                 sub={nextOpen ? `cierra ${timeUntil(new Date(lockAtMs(nextOpen.kickoff_at)).toISOString(), now)}` : "no hay próximos"}
                 accent="amber"
                 compact
-              />
-              <Stat
-                label="Por predecir"
-                value={counts.open}
-                sub={counts.open > 0 ? "no te quedes" : "todo al día"}
-                accent={counts.open > 0 ? "amber" : "slate"}
               />
             </section>
 
@@ -895,12 +897,12 @@ function Stat({
     : "text-slate-100";
 
   return (
-    <div className="bg-slate-900/55 p-5">
-      <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">{label}</div>
-      <div className={`mt-2 tabular-nums ${valueColor} ${compact ? "truncate text-base font-semibold" : "font-display text-3xl"}`}>
+    <div className="rounded-xl border border-white/10 bg-slate-900/30 p-4 backdrop-blur-md">
+      <div className="font-mono text-[10px] uppercase tracking-wider text-slate-300">{label}</div>
+      <div className={`mt-1.5 tabular-nums ${valueColor} ${compact ? "truncate text-base font-semibold" : "font-display text-3xl"}`}>
         {value}
       </div>
-      {sub && <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>}
+      {sub && <div className="mt-1 text-[10px] leading-tight text-slate-200/80">{sub}</div>}
     </div>
   );
 }
