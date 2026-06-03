@@ -494,7 +494,7 @@ export default async function PoolDetailPage({
 
           {/* Sidebar ranking / Tabla General (estilo Stitch) - sticky en lg+; tab activo en mobile */}
           <aside className={`lg:sticky lg:top-[4.5rem] lg:self-start lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto ${activeTab === "ranking" ? "block" : "hidden lg:block"}`}>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/15 p-5 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/10 bg-slate-900/5 p-5 backdrop-blur-sm">
               <div className="mb-6 text-center">
                 <h2 className="text-3xl uppercase italic tracking-tight">Tabla general</h2>
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
@@ -560,8 +560,8 @@ export default async function PoolDetailPage({
                             className={[
                               "flex items-center rounded-xl px-3 py-3 transition-colors",
                               isMe
-                                ? "glow-lime border border-[#c6ff3d]/40 bg-slate-800/35"
-                                : "border border-white/5 bg-slate-800/15 hover:bg-slate-800/35",
+                                ? "glow-lime border border-[#c6ff3d]/40 bg-slate-800/20"
+                                : "border border-white/5 bg-slate-800/8 hover:bg-slate-800/20",
                             ].join(" ")}
                           >
                             <span className={`w-7 font-display italic ${isMe ? "text-[#c6ff3d]" : "text-slate-400"}`}>
