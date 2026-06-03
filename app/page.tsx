@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ParticleField } from "@/components/ParticleField";
@@ -10,13 +11,15 @@ export default async function Home() {
 
   return (
     <main className="relative flex h-screen flex-col justify-end overflow-hidden bg-[#0a1f1c] text-slate-100">
-      {/* Capa de fondo: foto de estadio + gradiente */}
+      {/* Capa de fondo: foto de la afición + gradiente */}
       <div className="fixed inset-0 z-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/imagen/estadio.jpg"
+        <Image
+          src="/imagen/aficion.png"
           alt="Atmósfera Mundial 2026"
-          className="h-full w-full object-cover"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
         />
         <div className="stadium-gradient absolute inset-0" />
       </div>
