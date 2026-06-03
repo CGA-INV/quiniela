@@ -14,7 +14,7 @@ export default async function Home() {
       {/* Capa de fondo: foto de la afición + gradiente */}
       <div className="fixed inset-0 z-0">
         <Image
-          src="/imagen/aficion.png"
+          src="/imagen/estadio.png"
           alt="Atmósfera Mundial 2026"
           fill
           priority
