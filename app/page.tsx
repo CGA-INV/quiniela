@@ -1,8 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ParticleField } from "@/components/ParticleField";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -10,20 +8,7 @@ export default async function Home() {
   if (user) redirect("/pools");
 
   return (
-    <main className="relative flex h-screen flex-col justify-end overflow-hidden bg-[#0a1f1c] text-slate-100">
-      {/* Capa de fondo: foto de la afición + gradiente */}
-      <div className="fixed inset-0 z-0">
-        <Image
-          src="/imagen/estadio.png"
-          alt="Atmósfera Mundial 2026"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="stadium-gradient absolute inset-0" />
-      </div>
-
+    <main className="relative flex h-screen flex-col justify-end overflow-hidden text-slate-100">
       {/* Marca */}
       <header className="fixed left-0 top-0 z-20 flex w-full items-center justify-between px-5 py-4">
         <div className="font-display text-3xl uppercase italic tracking-tighter text-[#c6ff3d]">
@@ -66,9 +51,6 @@ export default async function Home() {
           </p>
         </div>
       </div>
-
-      {/* Partículas animadas */}
-      <ParticleField />
     </main>
   );
 }
