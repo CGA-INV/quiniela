@@ -172,7 +172,7 @@ export default async function AdminMatchesPage({
 
   return (
     <main className="min-h-dvh text-slate-100">
-      <ScreenBackground src="/imagen/cancha.webp" />
+      <ScreenBackground src="/imagen/estadio.webp" />
       <AdminNav
         active="partidos"
         isSuper={isSuper}

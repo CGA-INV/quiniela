@@ -74,7 +74,7 @@ export default async function ActivityLogPage({
 
   return (
     <main className="min-h-dvh text-slate-100">
-      <ScreenBackground src="/imagen/cancha.webp" />
+      <ScreenBackground src="/imagen/estadio.webp" />
       <AdminNav
         active="bitacora"
         isSuper={true}
