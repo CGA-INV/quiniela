@@ -101,7 +101,7 @@ export async function getPoolWinner(
     const s = stats.get(p.user_id);
     if (!s) continue;
     s.total += p.points ?? 0;
-    if (p.points === 3) s.exactos++;
+    if (p.points === 5) s.exactos++;
   }
 
   if (stats.size === 0) return null;

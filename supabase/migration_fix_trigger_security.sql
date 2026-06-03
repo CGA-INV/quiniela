@@ -37,16 +37,17 @@ begin
 end;
 $$;
 
--- También recreamos calc_points por si quedó desactualizada (no cambia,
--- pero asegura que existe y es immutable para el trigger).
+-- calc_points con la tabla de puntos vigente: 5 exacto / 3 ganador / 2 empate.
+-- (Antes este archivo la redefinía a 3/1/0 y pisaba migration_points_5_3_2.sql.)
 create or replace function public.calc_points(
   ph int, pa int, rh int, ra int
 ) returns int
 language sql immutable as $$
   select case
     when rh is null or ra is null then 0
-    when ph = rh and pa = ra then 3
-    when sign(ph - pa) = sign(rh - ra) then 1
+    when ph = rh and pa = ra then 5
+    when ph = pa and rh = ra then 2
+    when sign(ph - pa) = sign(rh - ra) then 3
     else 0
   end;
 $$;
