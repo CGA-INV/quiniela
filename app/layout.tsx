@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Anton, JetBrains_Mono } from "next/font/google";
 import { AppBackground } from "@/components/AppBackground";
 import "./globals.css";
@@ -19,9 +19,37 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  applicationName: "Quiniela 2026",
   title: "Quiniela Mundial 2026",
   description: "Predice los marcadores, compite con tus amigos y gana puntos.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Quiniela 2026",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es",
+    siteName: "Quiniela Mundial 2026",
+    title: "Quiniela Mundial 2026",
+    description: "Predice los marcadores, compite con tus amigos y gana puntos.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Quiniela Mundial 2026",
+    description: "Predice los marcadores, compite con tus amigos y gana puntos.",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a1f1c",
 };
 
 export default function RootLayout({
