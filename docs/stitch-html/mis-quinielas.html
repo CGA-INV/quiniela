@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mis Quinielas - WC2026</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Geist:wght@400;500;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24;
+        }
+        /* Custom glow effect for interactive elements */
+        .neon-glow:hover {
+            box-shadow: 0 0 25px rgba(198, 255, 61, 0.15);
+        }
+        /* Apple Sports inspired glassmorphism */
+        .glass-card {
+            background: rgba(20, 20, 15, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(67, 73, 52, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#cae9e1",
+                        "surface-container-high": "#2b2a24",
+                        "on-primary": "#263500",
+                        "surface-container-highest": "#36352f",
+                        "on-secondary-fixed-variant": "#90003e",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#32302b",
+                        "on-surface-variant": "#c3c9ae",
+                        "primary-fixed-dim": "#a2d801",
+                        "on-primary-container": "#516e00",
+                        "surface": "#14140f",
+                        "inverse-surface": "#e6e2d9",
+                        "on-primary-fixed": "#141f00",
+                        "tertiary-fixed": "#cae9e1",
+                        "surface-dim": "#14130e",
+                        "secondary-fixed-dim": "#ffb1c1",
+                        "secondary-fixed": "#ffd9df",
+                        "surface-variant": "#36352f",
+                        "on-tertiary-container": "#4e6a64",
+                        "primary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#304c46",
+                        "on-background": "#e6e2d9",
+                        "tertiary-fixed-dim": "#aecdc5",
+                        "secondary": "#ffb1c1",
+                        "on-secondary-container": "#ffdbe1",
+                        "background": "#14130e",
+                        "tertiary": "#ffffff",
+                        "outline-variant": "#434934",
+                        "outline": "#8d937b",
+                        "on-tertiary": "#193530",
+                        "surface-container-low": "#1c1c16",
+                        "inverse-primary": "#4c6700",
+                        "on-tertiary-fixed": "#03201b",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#3a3933",
+                        "on-secondary": "#66002a",
+                        "surface-tint": "#a2d801",
+                        "on-error-container": "#ffdad6",
+                        "error-live": "#ffb4ab",
+                        "glass-bg": "rgba(20, 48, 43, 0.85)",
+                        "surface-container": "#21201a",
+                        "secondary-container": "#c9005a",
+                        "on-secondary-fixed": "#3f0017",
+                        "surface-container-lowest": "#0f0e09",
+                        "primary-fixed": "#bdf532",
+                        "on-primary-fixed-variant": "#384e00",
+                        "primary-container": "#bdf532",
+                        "on-surface": "#e6e2d9",
+                        "midnight-green": "#0A1F1C",
+                        "electric-lime": "#C6FF3D"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem",
+                        "2xl": "1rem"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "md": "24px",
+                        "xl": "64px",
+                        "lg": "40px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "48px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-score": ["JetBrains Mono"],
+                        "score-display": ["Anton"],
+                        "body-lg": ["Geist"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Anton"],
+                        "headline-lg": ["Anton"],
+                        "display-xl": ["Anton"],
+                        "body-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "label-score": ["14px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "score-display": ["40px", { "lineHeight": "40px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["36px", { "lineHeight": "36px", "fontWeight": "400" }],
+                        "headline-lg": ["48px", { "lineHeight": "48px", "fontWeight": "400" }],
+                        "display-xl": ["84px", { "lineHeight": "80px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-midnight-green text-on-surface font-body-md antialiased min-h-screen flex flex-col relative pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-glass-bg backdrop-blur-md border-b border-outline-variant/10 flex justify-between items-center px-margin-mobile h-16">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary-fixed-dim text-2xl" data-icon="sports_soccer">sports_soccer</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary-fixed-dim tracking-tighter italic">WC2026</span>
+</div>
+<div class="flex items-center gap-sm">
+<button class="bg-surface-container hover:opacity-80 transition-opacity border border-outline-variant/20 rounded-full px-3 py-1 flex items-center gap-1 active:scale-95">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">admin_panel_settings</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Panel Admin</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT_NRPh61IK_DOAhlAiwNPhZ05dOkQBdaGvhioY3oITcBewxW-rGh-nLYsoLyoTSkEEpf95RCxwgXzVt2q4c3qOI26IiNKAUgJRlR8Dajj8WkgJNG9fH-oJn6COeQtRFkMw-WUwUvhGHbTYWRviqWFzlydRdb6miNs8FMy3X3zKanzyZqFAVidAbpkjlRcr14_KoZK_PfaoRbIwzCRjc6dLV3lwDFVco2jglUkZbEexSXIFcvCVuDG0E4z1-Iaa2xxtC6FKfJODiM"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto w-full">
+<div class="mb-lg">
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight mb-xs">Mis Quinielas</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Gestiona y participa en tus grupos de predicción.</p>
+</div>
+<!-- Pools List -->
+<div class="flex flex-col gap-sm">
+<!-- Card 1 -->
+<a class="glass-card rounded-2xl p-sm flex items-center justify-between group transition-all duration-300 neon-glow active:scale-95 cursor-pointer" href="#">
+<div class="flex flex-col gap-1">
+<h2 class="font-headline-lg-mobile text-2xl tracking-wide text-primary group-hover:text-electric-lime transition-colors">La Oficina</h2>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="font-label-caps text-[10px] bg-surface-container px-2 py-1 rounded-full text-electric-lime border border-electric-lime/20">Activa</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span class="font-label-score text-label-score">12 miembros</span>
+</div>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30 group-hover:bg-electric-lime/10 transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-electric-lime">arrow_forward</span>
+</div>
+</a>
+<!-- Card 2 -->
+<a class="glass-card rounded-2xl p-sm flex items-center justify-between group transition-all duration-300 neon-glow active:scale-95 cursor-pointer" href="#">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-lg-mobile text-2xl tracking-wide text-primary group-hover:text-electric-lime transition-colors">Familia Pérez</h2>
+<span class="font-label-caps text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-1 rounded-full">SANDBOX</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="font-label-caps text-[10px] bg-surface-container px-2 py-1 rounded-full text-electric-lime border border-electric-lime/20">Activa</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span class="font-label-score text-label-score">8 miembros</span>
+</div>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30 group-hover:bg-electric-lime/10 transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-electric-lime">arrow_forward</span>
+</div>
+</a>
+</div>
+<!-- Empty State Section -->
+<div class="mt-xl border-t border-outline-variant/10 pt-lg text-center">
+<div class="w-16 h-16 rounded-full bg-surface-container/50 flex items-center justify-center mx-auto mb-sm border border-outline-variant/20">
+<span class="material-symbols-outlined text-3xl text-on-surface-variant">mail</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto leading-relaxed">
+                Aún no perteneces a ninguna otra sala. Espera a que el administrador te envíe una invitación por correo para unirte a nuevos grupos.
+            </p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container-lowest border-t border-outline-variant/10 flex justify-around items-center h-20 px-4 pb-4 md:hidden">
+<!-- Active Tab: Pools -->
+<a aria-current="page" class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 hover:text-primary-fixed-dim transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-caps text-label-caps">Pools</span>
+</a>
+<!-- Inactive Tab: Matches -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="event">event</span>
+<span class="font-label-caps text-label-caps">Matches</span>
+</a>
+<!-- Inactive Tab: Standings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="format_list_numbered">format_list_numbered</span>
+<span class="font-label-caps text-label-caps">Standings</span>
+</a>
+<!-- Inactive Tab: Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+</body></html>

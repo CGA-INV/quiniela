@@ -630,7 +630,7 @@ function PaymentsSection({
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-emerald-500/5 p-5">
-      <Image src="/imagen/trofeo.png" alt="" fill sizes="(min-width:1024px) 50vw, 100vw" className="object-cover opacity-[0.12]" />
+      <Image src="/imagen/trofeo.webp" alt="" fill sizes="(min-width:1024px) 50vw, 100vw" className="object-cover opacity-[0.12]" />
       <div className="relative z-10 flex items-center gap-3">
         <span className="text-2xl">🏆</span>
         <div>

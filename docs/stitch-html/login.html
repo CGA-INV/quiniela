@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es-MX"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WORLD CUP 2026 - Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Geist:wght@400;700&amp;family=JetBrains+Mono:wght@500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton:wght@100..900&amp;family=Geist:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .glass-panel {
+            background: rgba(20, 48, 43, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(245, 241, 232, 0.15);
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .electric-glow {
+            text-shadow: 0 0 20px rgba(198, 255, 61, 0.4);
+        }
+
+        .stadium-gradient {
+            background: linear-gradient(to bottom, rgba(10, 31, 28, 0) 0%, rgba(10, 31, 28, 0.8) 60%, rgba(10, 31, 28, 1) 100%);
+        }
+
+        body {
+            background-color: #0A1F1C;
+            overflow: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#b4cbc6",
+                        "error-container": "#93000a",
+                        "surface-dim": "#14140f",
+                        "on-tertiary": "#203431",
+                        "on-primary-container": "#516e00",
+                        "secondary-fixed-dim": "#ffb1c1",
+                        "on-secondary-fixed": "#3f0017",
+                        "inverse-primary": "#4c6700",
+                        "secondary": "#ffb1c1",
+                        "surface-container": "#20201a",
+                        "inverse-surface": "#e6e2d9",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "surface-container-high": "#2b2a24",
+                        "on-secondary-container": "#ffdbe1",
+                        "surface-variant": "#36352f",
+                        "surface-tint": "#a2d801",
+                        "outline": "#8d937b",
+                        "on-surface-variant": "#c3c9ae",
+                        "on-secondary": "#66002a",
+                        "surface-container-highest": "#36352f",
+                        "on-tertiary-fixed": "#0a1f1c",
+                        "on-secondary-fixed-variant": "#90003e",
+                        "tertiary": "#ffffff",
+                        "surface": "#14140f",
+                        "background": "#14140f",
+                        "primary-container": "#bdf532",
+                        "surface-bright": "#3a3933",
+                        "on-tertiary-container": "#536964",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#31302b",
+                        "tertiary-fixed": "#d0e7e2",
+                        "on-tertiary-fixed-variant": "#364b47",
+                        "on-surface": "#e6e2d9",
+                        "on-primary-fixed-variant": "#384e00",
+                        "primary": "#ffffff",
+                        "on-primary": "#263500",
+                        "on-background": "#e6e2d9",
+                        "secondary-fixed": "#ffd9df",
+                        "surface-container-low": "#1c1c16",
+                        "secondary-container": "#c9005a",
+                        "tertiary-container": "#d0e7e2",
+                        "primary-fixed": "#bdf532",
+                        "primary-fixed-dim": "#a2d801",
+                        "on-primary-fixed": "#141f00",
+                        "outline-variant": "#434934",
+                        "surface-container-lowest": "#0f0e0a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "40px",
+                        "margin-mobile": "20px",
+                        "sm": "16px",
+                        "xl": "64px",
+                        "margin-desktop": "48px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "md": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Anton"],
+                        "score-display": ["Anton"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg": ["Anton"],
+                        "body-md": ["Geist"],
+                        "label-score": ["JetBrains Mono"],
+                        "display-xl": ["Anton"],
+                        "body-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["36px", {"lineHeight": "36px", "fontWeight": "400"}],
+                        "score-display": ["40px", {"lineHeight": "40px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "headline-lg": ["48px", {"lineHeight": "48px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-score": ["14px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "display-xl": ["84px", {"lineHeight": "80px", "letterSpacing": "0.02em", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="antialiased text-on-surface h-screen flex flex-col justify-end relative">
+<!-- Background Layer -->
+<div class="fixed inset-0 z-0">
+<img alt="Fifa World Cup 2026 Atmosphere" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQ8yChHNSR5hmarSEltgs5KsxEB8fcM4CmUc6vQja1ZaT5j6Z_EXugtDhrALSzq9GCMOsLV1y7VO8ntRh8NmLC0t_FluA_1ZunUFjKA-3I5QQ8jM6ak4Wng0-WJ5sFhHgGeJZ2fz70RNYVqV-lIESKvYc7uMRtiUiBFHD2Ej-XC6I_IZ86OuBWw7-UN5ry4i-EipEIGRQN1r9r0iyYj1X90yzv_Okg9RiqVWnb2-7wCVF0tot13ht5UProHro7G3ikEIsemE2otB8"/>
+<div class="absolute inset-0 stadium-gradient"></div>
+</div>
+<!-- Header / Brand (Suppressed from JSON logic but needed for Identity) -->
+<header class="fixed top-0 left-0 w-full z-20 px-margin-mobile py-sm flex justify-between items-center">
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary-fixed uppercase italic tracking-tighter">
+            WORLD CUP 2026
+        </div>
+<div class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined">language</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 w-full px-margin-mobile mb-xl">
+<div class="max-w-md mx-auto">
+<!-- Tagline Section -->
+<div class="mb-lg space-y-2">
+<p class="font-label-caps text-label-caps text-primary-fixed opacity-80">PROXIMAMENTE</p>
+<h1 class="font-display-xl text-display-xl text-primary-fixed electric-glow uppercase leading-none">
+                    Tu quiniela del <br/>Mundial 2026
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[280px]">
+                    Vive la emoción del torneo más grande del mundo y gana premios exclusivos.
+                </p>
+</div>
+<!-- Onboarding Glass Card -->
+<div class="glass-panel rounded-xl p-md space-y-sm mb-lg border border-outline-variant/10">
+<!-- Primary Action -->
+<button class="w-full bg-primary-fixed text-on-primary-fixed py-md font-label-caps text-label-caps rounded-sm hover:scale-[1.02] active:scale-95 transition-all duration-200 flex items-center justify-center gap-xs">
+                    ENTRAR
+                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<!-- Social Authentication -->
+<div class="grid grid-cols-2 gap-sm">
+<button class="flex items-center justify-center gap-base bg-surface-container-high py-sm rounded-sm hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-primary-fixed">google</span>
+<span class="font-label-caps text-label-caps">GOOGLE</span>
+</button>
+<button class="flex items-center justify-center gap-base bg-surface-container-high py-sm rounded-sm hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-primary-fixed">alternate_email</span>
+<span class="font-label-caps text-label-caps">EMAIL</span>
+</button>
+</div>
+<!-- Terms & Links -->
+<div class="text-center pt-xs">
+<p class="font-body-md text-[12px] text-on-surface-variant/60 leading-tight">
+                        Al continuar, aceptas nuestros <a class="text-primary-fixed underline decoration-primary-fixed/30 underline-offset-2" href="#">Términos de Servicio</a> y <a class="text-primary-fixed underline decoration-primary-fixed/30 underline-offset-2" href="#">Privacidad</a>.
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Decorative Atmosphere Particles -->
+<div class="fixed inset-0 pointer-events-none z-10 opacity-30" id="particles"></div>
+<script>
+        // Micro-interaction: Particle Effect to simulate rain/lights
+        const particlesContainer = document.getElementById('particles');
+        function createParticle() {
+            const particle = document.createElement('div');
+            const size = Math.random() * 2 + 1;
+            particle.className = 'absolute bg-primary-fixed rounded-full opacity-0';
+            particle.style.width = size + 'px';
+            particle.style.height = (size * (Math.random() * 5 + 5)) + 'px';
+            particle.style.left = Math.random() * 100 + 'vw';
+            particle.style.top = '-10vh';
+            
+            particlesContainer.appendChild(particle);
+
+            const duration = Math.random() * 1000 + 1000;
+            const animation = particle.animate([
+                { transform: 'translateY(0) rotate(15deg)', opacity: 0 },
+                { transform: 'translateY(50vh) rotate(15deg)', opacity: 0.5 },
+                { transform: 'translateY(110vh) rotate(15deg)', opacity: 0 }
+            ], {
+                duration: duration,
+                easing: 'linear'
+            });
+
+            animation.onfinish = () => particle.remove();
+        }
+
+        // Generate particles periodically
+        setInterval(createParticle, 150);
+
+        // Hover Effect on buttons for light refraction
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                btn.style.setProperty('--x', `${x}px`);
+                btn.style.setProperty('--y', `${y}px`);
+            });
+        });
+    </script>
+</body></html>

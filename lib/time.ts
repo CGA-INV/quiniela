@@ -1,7 +1,7 @@
 // Cuánto tiempo antes del kickoff se cierran las predicciones.
 // IMPORTANTE: este valor también está hardcodeado en
 // supabase/migration_prediction_lock.sql. Mantenelos en sync.
-export const PREDICTION_LOCK_MINUTES = 10;
+export const PREDICTION_LOCK_MINUTES = 60;
 
 export function lockAtMs(kickoffIso: string): number {
   return new Date(kickoffIso).getTime() - PREDICTION_LOCK_MINUTES * 60 * 1000;

@@ -39,6 +39,10 @@ yarn-error.log*
 # local dev artifacts
 dev.log
 
+# secrets / API keys (do not commit)
+stitch.txt
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/imagen/

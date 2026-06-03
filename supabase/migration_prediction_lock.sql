@@ -1,5 +1,5 @@
 -- =====================================================================
--- Cierra las predicciones 10 minutos ANTES del kickoff.
+-- Cierra las predicciones 1 hora ANTES del kickoff.
 -- Pegar en Supabase SQL Editor -> Run. Idempotente.
 --
 -- IMPORTANTE: la constante de minutos también vive en
@@ -15,7 +15,7 @@ create policy "predictions_insert_own_before_kickoff" on public.predictions
     and exists (
       select 1 from public.matches m
       where m.id = predictions.match_id
-        and m.kickoff_at > now() + interval '10 minutes'
+        and m.kickoff_at > now() + interval '1 hour'
     )
   );
 
@@ -26,7 +26,7 @@ create policy "predictions_update_own_before_kickoff" on public.predictions
     and exists (
       select 1 from public.matches m
       where m.id = predictions.match_id
-        and m.kickoff_at > now() + interval '10 minutes'
+        and m.kickoff_at > now() + interval '1 hour'
     )
   );
 
@@ -41,7 +41,7 @@ create policy "predictions_select_own_or_after_kickoff" on public.predictions
       and exists (
         select 1 from public.matches m
         where m.id = predictions.match_id
-          and m.kickoff_at - interval '10 minutes' <= now()
+          and m.kickoff_at - interval '1 hour' <= now()
       )
     )
   );

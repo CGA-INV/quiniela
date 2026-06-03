@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es-MX"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Crear Quiniela | World Cup 2026</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Geist:wght@100..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #14140f;
+            color: #e6e2d9;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .stadium-glow {
+            box-shadow: 0 0 40px rgba(198, 255, 61, 0.15);
+        }
+        .glass-panel {
+            backdrop-filter: blur(10px);
+            background: rgba(20, 48, 43, 0.8);
+            border: 1px solid rgba(245, 241, 232, 0.1);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#b4cbc6",
+                        "error-container": "#93000a",
+                        "surface-dim": "#14140f",
+                        "on-tertiary": "#203431",
+                        "on-primary-container": "#516e00",
+                        "secondary-fixed-dim": "#ffb1c1",
+                        "on-secondary-fixed": "#3f0017",
+                        "inverse-primary": "#4c6700",
+                        "secondary": "#ffb1c1",
+                        "surface-container": "#20201a",
+                        "inverse-surface": "#e6e2d9",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "surface-container-high": "#2b2a24",
+                        "on-secondary-container": "#ffdbe1",
+                        "surface-variant": "#36352f",
+                        "surface-tint": "#a2d801",
+                        "outline": "#8d937b",
+                        "on-surface-variant": "#c3c9ae",
+                        "on-secondary": "#66002a",
+                        "surface-container-highest": "#36352f",
+                        "on-tertiary-fixed": "#0a1f1c",
+                        "on-secondary-fixed-variant": "#90003e",
+                        "tertiary": "#ffffff",
+                        "surface": "#14140f",
+                        "background": "#14140f",
+                        "primary-container": "#bdf532",
+                        "surface-bright": "#3a3933",
+                        "on-tertiary-container": "#536964",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#31302b",
+                        "tertiary-fixed": "#d0e7e2",
+                        "on-tertiary-fixed-variant": "#364b47",
+                        "on-surface": "#e6e2d9",
+                        "on-primary-fixed-variant": "#384e00",
+                        "primary": "#ffffff",
+                        "on-primary": "#263500",
+                        "on-background": "#e6e2d9",
+                        "secondary-fixed": "#ffd9df",
+                        "surface-container-low": "#1c1c16",
+                        "secondary-container": "#c9005a",
+                        "tertiary-container": "#d0e7e2",
+                        "primary-fixed": "#bdf532",
+                        "primary-fixed-dim": "#a2d801",
+                        "on-primary-fixed": "#141f00",
+                        "outline-variant": "#434934",
+                        "surface-container-lowest": "#0f0e0a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "40px",
+                        "margin-mobile": "20px",
+                        "sm": "16px",
+                        "xl": "64px",
+                        "margin-desktop": "48px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "md": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Anton"],
+                        "score-display": ["Anton"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg": ["Anton"],
+                        "body-md": ["Geist"],
+                        "label-score": ["JetBrains Mono"],
+                        "display-xl": ["Anton"],
+                        "body-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["36px", {"lineHeight": "36px", "fontWeight": "400"}],
+                        "score-display": ["40px", {"lineHeight": "40px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "headline-lg": ["48px", {"lineHeight": "48px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-score": ["14px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "display-xl": ["84px", {"lineHeight": "80px", "letterSpacing": "0.02em", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- Top Navigation Anchor (As sub-page, leading icon is back) -->
+<header class="bg-surface-container dark:bg-surface-container docked full-width top-0 z-40 flex justify-between items-center px-margin-mobile w-full py-sm">
+<div class="flex items-center gap-4 cursor-pointer hover:bg-surface-variant transition-colors p-2" onclick="window.history.back()">
+<span class="material-symbols-outlined text-primary-fixed">arrow_back</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary-fixed dark:text-primary-fixed-dim uppercase italic">WORLD CUP 2026</h1>
+<div class="w-10"></div> <!-- Spacer for symmetry -->
+</header>
+<main class="max-w-xl mx-auto px-margin-mobile pt-lg pb-xl">
+<!-- Form Section -->
+<section class="space-y-xl" id="creation-form">
+<header>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface uppercase mb-xs">NUEVA QUINIELA</h2>
+<p class="font-body-md text-on-surface-variant">Crea tu grupo y compite con amigos por la gloria mundialista.</p>
+</header>
+<div class="space-y-lg">
+<!-- Avatar Upload -->
+<div class="flex flex-col items-center gap-base">
+<div class="relative w-32 h-32 bg-surface-container-high flex items-center justify-center border-2 border-dashed border-outline-variant hover:border-primary-fixed transition-all group cursor-pointer overflow-hidden">
+<img class="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-40" data-alt="A minimalist studio portrait placeholder for a sports profile, using dramatic high-contrast lighting typical of professional football media kits. The background is a deep midnight green with subtle atmospheric stadium haze. The lighting is focused on the central silhouette area, creating a premium and intense sporting atmosphere consistent with the 2026 World Cup brand." id="avatar-preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeMVMalAFe6OE8jdDiA02MVUMgh0tAmW7TdXt2hhrLqmFPt0ba6BqvDbpjedH_233hD8ZLdR4ZMfHWmVJZmxQ5J8MDNAxx0h4opY01xnFBprz7iWcwMnOE0Fs8V9G7RosjJePlM9aPqKYdShVKJBmRlyOUQrb0EKlYwgRnPZcrB6XqjvU15_RoBlnDDMxgLo1SoIcdE7-WhTNSgF3G3-syMsbQushXaf6nWAjVK2WfSBjcfEcBCyV5nMSe-Uw2y_vWgBslPLLTqv0"/>
+<div class="relative z-10 flex flex-col items-center">
+<span class="material-symbols-outlined text-primary-fixed text-4xl mb-2">add_a_photo</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">SUBIR LOGO</span>
+</div>
+</div>
+<p class="font-label-caps text-[10px] text-outline mt-2 italic text-center uppercase">Logo de Quiniela (Opcional)</p>
+</div>
+<!-- Input Name -->
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-primary-fixed block uppercase">NOMBRE DE LA QUINIELA</label>
+<input class="w-full h-16 bg-[#14302B] border-none text-on-surface font-headline-lg-mobile text-headline-lg-mobile px-4 focus:ring-2 focus:ring-primary-fixed placeholder:text-surface-variant transition-all outline-none" placeholder="EJ. LOS GOLEADORES DE MÉXICO" type="text"/>
+</div>
+<!-- Create Button -->
+<button class="w-full h-16 bg-primary-fixed text-on-primary-fixed font-label-caps text-label-caps flex items-center justify-center hover:bg-primary-fixed-dim transition-transform active:scale-95 duration-150 stadium-glow" onclick="generateCode()">
+                    CREAR Y GENERAR CÓDIGO
+                </button>
+</div>
+</section>
+<!-- Success/Code Section (Hidden Initially) -->
+<section class="hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm" id="success-sheet">
+<div class="glass-panel w-full max-w-xl mx-auto rounded-t-xl p-lg space-y-lg animate-in slide-in-from-bottom duration-300">
+<div class="w-12 h-1.5 bg-outline-variant/30 rounded-full mx-auto mb-xs"></div>
+<header class="text-center">
+<div class="w-16 h-16 bg-primary-container text-on-primary-container rounded-full mx-auto flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-4xl" data-weight="fill">check_circle</span>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface uppercase">¡LISTO!</h2>
+<p class="font-body-md text-on-surface-variant">Tu quiniela ha sido creada exitosamente.</p>
+</header>
+<div class="bg-surface-container-highest p-md space-y-sm">
+<p class="font-label-caps text-label-caps text-center text-on-surface-variant">CÓDIGO DE INVITACIÓN</p>
+<div class="flex items-center justify-between gap-md">
+<span class="font-display-xl text-display-xl text-primary-fixed tracking-[0.2em] italic" id="invite-code">WC26XY</span>
+<button class="p-4 hover:bg-surface-variant transition-colors rounded-lg" onclick="copyToClipboard()">
+<span class="material-symbols-outlined text-on-surface">content_copy</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<button class="flex flex-col items-center justify-center gap-base py-md bg-[#25D366] text-white rounded-lg hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl">share</span>
+<span class="font-label-caps text-label-caps">WHATSAPP</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-base py-md bg-surface-container-high text-on-surface rounded-lg hover:bg-surface-variant active:scale-95 transition-all border border-outline-variant/20" onclick="location.reload()">
+<span class="material-symbols-outlined text-3xl">dashboard</span>
+<span class="font-label-caps text-label-caps">IR AL DASHBOARD</span>
+</button>
+</div>
+<div class="pb-md">
+<p class="font-body-md text-on-surface-variant text-center opacity-60">Comparte este código para que tus amigos se unan a la competencia.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Shell (Filter: Suppressed for Transactional Step - Only visible on main screens) -->
+<!-- Note: Following the 'Destination Rule', the nav is hidden here to prioritize the focused journey. -->
+<script>
+        function generateCode() {
+            const successSheet = document.getElementById('success-sheet');
+            successSheet.classList.remove('hidden');
+            
+            // Generate a random 6 char code
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = 'WC26'; // Prefix for branding
+            for(let i = 0; i < 2; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('invite-code').innerText = code;
+        }
+
+        function copyToClipboard() {
+            const code = document.getElementById('invite-code').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.currentTarget;
+                const icon = btn.querySelector('.material-symbols-outlined');
+                icon.innerText = 'done';
+                setTimeout(() => {
+                    icon.innerText = 'content_copy';
+                }, 2000);
+            });
+        }
+
+        // Close sheet if clicking backdrop
+        document.getElementById('success-sheet').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    </script>
+</body></html>

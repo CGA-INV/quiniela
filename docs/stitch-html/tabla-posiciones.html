@@ -1,0 +1,269 @@
+<!DOCTYPE html><html class="dark" lang="es-MX"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Geist:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Apple Sports Aesthetic: Minimalist, blur-heavy, sleek typography */
+        .apple-blur {
+            background: rgba(28, 28, 30, 0.7);
+            backdrop-filter: saturate(180%) blur(20px);
+        }
+        .card-glass {
+            background: rgba(44, 44, 46, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .card-glass-highlight {
+            background: rgba(44, 44, 46, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+            font-family: 'Geist', sans-serif;
+        }
+        /* Tabular numbers for perfect alignment */
+        .tabular {
+            font-variant-numeric: tabular-nums;
+        }
+        /* Subtle glow for current user */
+        .user-highlight {
+            position: relative;
+        }
+        .user-highlight::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            box-shadow: 0 0 15px rgba(162, 216, 1, 0.15);
+            pointer-events: none;
+        }</style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#a2d801",
+                        "surface": "#000000",
+                        "surface-container": "#1c1c1e",
+                        "on-surface": "#ffffff",
+                        "on-surface-variant": "#8e8e93",
+                        "outline-variant": "#3a3a3c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "12px",
+                        "xl": "16px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Anton"],
+                        "body": ["Geist"],
+                        "mono": ["JetBrains Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Apple Sports Aesthetic: Minimalist, blur-heavy, sleek typography */
+        .apple-blur {
+            background: rgba(28, 28, 30, 0.7);
+            backdrop-filter: saturate(180%) blur(20px);
+        }
+        .card-glass {
+            background: rgba(44, 44, 46, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .card-glass-highlight {
+            background: rgba(44, 44, 46, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+            font-family: 'Geist', sans-serif;
+        }
+        /* Tabular numbers for perfect alignment */
+        .tabular {
+            font-variant-numeric: tabular-nums;
+        }
+        /* Subtle glow for current user */
+        .user-highlight {
+            position: relative;
+        }
+        .user-highlight::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            box-shadow: 0 0 15px rgba(162, 216, 1, 0.15);
+            pointer-events: none;
+        }</style></head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 apple-blur border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/20">
+<img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaR5KbJf24GO8YXEyi8exzf7M7o0JM0DvYuBvEmcGFiqH9eytAlkG5U33fXtgOaH8BU5A2UcfSUd_wEYHK05_EAVBCvMnWmDPY33F8WeN8CX1B974fI-ZEE0EnfOAwk8erchrK4OCz7QQusGKQlkh-WvpuYD7VIBVP0aDnF79W0FROzYrfhN-xmu8IL6WNZYxrjY5fYdGWR-wiL2R-W49l1CMUtLtG1DVzscwdzmQNmD-Yli_fjMEWPIKewnz1IzZrUZnZEWCNVJ4">
+</div>
+<span class="font-headline text-2xl tracking-tight uppercase italic text-primary-fixed">2026 WORLD CUP</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-white transition-colors">
+            settings
+        </button>
+</nav>
+<main class="pt-24 pb-32 px-6 max-w-lg mx-auto">
+<!-- Header -->
+<div class="mb-10 text-center">
+<h1 class="font-headline text-5xl uppercase italic mb-1 tracking-tight">TABLA GENERAL</h1>
+<p class="font-mono text-[10px] text-on-surface-variant uppercase tracking-[0.2em]">GRUPO DE AMIGOS • FASE DE GRUPOS</p>
+</div>
+<!-- Simplified Podium -->
+<div class="flex items-end justify-center gap-4 mb-14">
+<!-- 2nd -->
+<div class="flex flex-col items-center flex-1">
+<div class="relative mb-3">
+<div class="w-20 h-20 rounded-full border-2 border-white/10 p-1">
+<img alt="2nd" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoHrrFLYcfoaWEtP2ONKh75o9g-WnLlrFpLlwAF2Og3l4zZ1dtSO0l9hs-eTS1h0gq1MO1Lc29JZqNIoOXD3uMyH1kH1Eh22WYJROa3YcExKRDaR1WU0Ly1E8BeenBxbLbY4mBdrjFsF8tH_iLO5vulwOaxXO_rXJqN1i0n5MFOSXmoia_QSiwVuE815M5uHygsaMsKCOImRKQN_zJbG2No7sNMpJ1X4CwueQqoHclb9e0h5RphGxjeUD5KbveKbeWh_LLQtVt7FE">
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-black w-6 h-6 flex items-center justify-center rounded-full font-headline text-xs italic">2</div>
+</div>
+<p class="font-mono text-[10px] text-on-surface-variant mb-1 uppercase">Carlos R.</p>
+<p class="font-headline text-3xl tabular">2,410</p>
+</div>
+<!-- 1st -->
+<div class="flex flex-col items-center flex-1">
+<div class="relative mb-4">
+<div class="w-28 h-28 rounded-full border-4 border-primary-fixed p-1">
+<img alt="1st" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCscAIU5rOuJVmK7p2Jm26XPYHlcJQaW_dn3ROm2mzb-mBp2YH6wBIqBGAQ9cDFCYPgs5TeGd7vcBLrmi35mPQYfP51jZCcIMmTVlOKM2jltV_aPrW1d4mv7Eg8eUkSsK0pdxa5ML8nYNyViLGGY2KI-qFIQ8lznbCoPOElJEqs6uskvw4PqJM545CTssEEzb9AzPNV4wD9AlHFRhuiXdPeGcab46V1fUIuWOYax5k1YBGZntEatjSRz2gfSSW8o-0MHyP4JXvOP7o">
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary-fixed text-black px-3 py-0.5 rounded-full font-headline text-xs italic uppercase">LÍDER</div>
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 text-primary-fixed">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+</div>
+</div>
+<p class="font-mono text-[10px] text-primary-fixed mb-1 uppercase font-bold tracking-wider">Sofía G.</p>
+<p class="font-headline text-5xl text-primary-fixed tabular">2,585</p>
+</div>
+<!-- 3rd -->
+<div class="flex flex-col items-center flex-1">
+<div class="relative mb-3">
+<div class="w-20 h-20 rounded-full border-2 border-white/10 p-1">
+<img alt="3rd" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6PNcAloHQVryWwE32QX4atR2tt2uSCPFRg7zytxjEWQCFDAEDejQfUuVOY45WeiOx7-pw2tg8HuA6yxeD73rbo5Fv8TwJsL8au20uDRllWJcgdc5_RCqr3fBMrFUd9kBXB62oiApACHRgX2Euxiw6u9DsB6589uKTo0iYzcS5J-YkrnnyPZr9RgrIqUMhX4EkNUzLhy27OB9YY3eOKyorCIvb9xiUKx9M4UbcQAGOAn4BfSzbRWImvlXDjgTaLfE1VOusaa8mFRY">
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white/40 text-black w-6 h-6 flex items-center justify-center rounded-full font-headline text-xs italic">3</div>
+</div>
+<p class="font-mono text-[10px] text-on-surface-variant mb-1 uppercase">Miguel A.</p>
+<p class="font-headline text-3xl tabular">2,390</p>
+</div>
+</div>
+<!-- Ranking List -->
+<div class="space-y-1">
+<!-- Table Headers -->
+<div class="flex items-center px-4 py-2 font-mono text-[9px] text-on-surface-variant uppercase tracking-[0.15em] border-b border-white/10 mb-2" style="opacity: 1; transform: translateY(0px); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);">
+<span class="w-8">Pos</span>
+<span class="flex-1">Participante</span>
+<span class="w-16 text-right">Delta</span>
+<span class="w-20 text-right">Pts</span>
+</div>
+<!-- Rank Item 4 -->
+<div class="flex items-center px-4 py-4 rounded-xl hover:bg-[#2c2c2e] transition-colors card-glass" style="opacity: 1; transform: translateY(0px); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1) 40ms;">
+<span class="w-8 font-headline italic text-on-surface-variant">04</span>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-white/5">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4U_GYDo1AepklTl5xOiRRHP8zm-zZtl8zrcvJPS-CzaQ83z30wUh7SqxfHL_OVav8-OtTflxFWZxotmSWSeMv7HgnTuGkOE1W3W5kRJP4qglDLgvge-7SYY2g2_k2taFfPBZ_Z-gYE0_Baq49OSs85DA-HXr_YTfSJASlvwBVi2ZTb-qv85SuJMKM1o6yV-XnitvZVIwJJJeHgkNmvPkQF1XREzZez-DYIEVTOB2ct2An6BZtzt_Equ5hussPD1I_1mLEVpUTaTQ">
+</div>
+<span class="font-bold text-sm tracking-tight">RAFAEL SOTO</span>
+</div>
+<span class="w-16 text-right font-mono text-[10px] text-primary-fixed tabular">▲ 12</span>
+<span class="w-20 text-right font-headline text-lg tabular">2,150</span>
+</div>
+<!-- Rank Item 5 (CURRENT USER HIGHLIGHTED) -->
+<div class="flex items-center px-4 py-4 rounded-xl user-highlight border border-primary-fixed/20 card-glass-highlight" style="opacity: 1; transform: translateY(0px); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1) 80ms;">
+<span class="w-8 font-headline italic text-primary-fixed">05</span>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary-fixed/40">
+<img alt="Current User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTYGBQHFbWa6t9Uafi8cveFKqg8WdZD5cUwkJah8H45fx68WaDPMByGH9B2hYqGhGcQG1wQnVDJukCp32iERwGjX6c9Mt3zC9E6TVOSAigrBnBmVkkfKYGPE10FQdgNJJnYrWrczULORL4pX6hlxt6OmfJSvX83Tuom4M2wh0OvuMbPCmufeNU0lu04e1UIVIqvpoIO0Hqmox856fEL8qURiuBKlUCq3ngnhKzuwS2wRhrBeXTjNKGR_07N4r4tvpSs0IgE-61wK8">
+</div>
+<div>
+<span class="font-bold text-sm tracking-tight text-white block">MARCO T. (TÚ)</span>
+<span class="text-[9px] font-mono text-primary-fixed uppercase tracking-wider">Subiendo</span>
+</div>
+</div>
+<span class="w-16 text-right font-mono text-[10px] text-primary-fixed tabular">▲ 45</span>
+<span class="w-20 text-right font-headline text-2xl text-primary-fixed tabular">2,080</span>
+</div>
+<!-- Rank Item 6 -->
+<div class="flex items-center px-4 py-4 rounded-xl hover:bg-[#2c2c2e] transition-colors card-glass" style="opacity: 1; transform: translateY(0px); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1) 120ms;">
+<span class="w-8 font-headline italic text-on-surface-variant">06</span>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-white/5">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8RHSzTM2VGxjXDbEaOxqAGNlMyLBuGV0ATyHfLqADTxRuP01VQYOogJNPZGTim-_3CKafbu1A-fTueGORSceQlH7-1xnKgUwp7LQfq5Xkv1-uRTQTIsxgUww3pjqTjDj5OLsBpCxS9-c4anP3EwOpqBEZqgHSf3Z3WTpNk8K_6uO15zh3j_mgp8XPhacUyYDiNCK9KwnPQ5URssnFYACM3HI6duBYy4xrWDG7PTNDCu5yRpV2a5FjUh3N6AVdS1aPx-KKtUIXR-g">
+</div>
+<span class="font-bold text-sm tracking-tight">VALERIA P.</span>
+</div>
+<span class="w-16 text-right font-mono text-[10px] text-red-500 tabular">▼ 2</span>
+<span class="w-20 text-right font-headline text-lg tabular">1,995</span>
+</div>
+<!-- Rank Item 7 -->
+<div class="flex items-center px-4 py-4 rounded-xl hover:bg-[#2c2c2e] transition-colors card-glass" style="opacity: 1; transform: translateY(0px); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1) 160ms;">
+<span class="w-8 font-headline italic text-on-surface-variant">07</span>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-white/5">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2nF9jiFESY8eN4bthbVEVIHA71ogDB0r5QFKSOMbTolybcwIJ75lGJugeCXaDV0G5BINhTUT6FgANV2BrnObEHtN6O9RdlYpVL0FoxXsDKqnSwaVLfa4uODnkM52yd0WZj79oYdjyCEr-v1okHAsd9BDCLsoYgUZywb_VeagR8LWYy6ktcRp3YJvSyxte7mmglXKSSo-3QahJ8a7XGxtMXmC_BfrRA1YL2iUa8nNAfSh7lP47M_RY0faCf8GfD79ZOYGmeal132w">
+</div>
+<span class="font-bold text-sm tracking-tight">JUAN CAO</span>
+</div>
+<span class="w-16 text-right font-mono text-[10px] text-on-surface-variant tabular">— 0</span>
+<span class="w-20 text-right font-headline text-lg tabular">1,820</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-8 pt-4 apple-blur border-t border-white/5">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 hover:text-white" href="#">
+<span class="material-symbols-outlined mb-1">emoji_events</span>
+<span class="font-mono text-[9px] uppercase tracking-wider">Quinielas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 hover:text-white" href="#">
+<span class="material-symbols-outlined mb-1">sports_soccer</span>
+<span class="font-mono text-[9px] uppercase tracking-wider">Partidos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary-fixed px-2" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-mono text-[9px] uppercase tracking-wider">Tabla</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 hover:text-white" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-mono text-[9px] uppercase tracking-wider">Perfil</span>
+</a>
+</nav>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const listItems = document.querySelectorAll('.space-y-1 > div');
+            listItems.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(10px)';
+                item.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                item.style.transitionDelay = `${index * 40}ms`;
+                
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, 100);
+            });
+        });
+    </script>
+
+
+</body></html>

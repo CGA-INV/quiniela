@@ -100,6 +100,15 @@ h1, h2 {
 .electric-glow {
   text-shadow: 0 0 22px rgb(198 255 61 / 0.45);
 }
+/* Crossfade del fondo rotatorio */
+@keyframes bg-rotate-fade {
+  from { opacity: 0; }
+  to { opacity: 0.4; }
+}
+.bg-rotate-fade {
+  animation: bg-rotate-fade 1.2s ease both;
+}
+
 /* Halo atmosférico tipo "estadio bajo reflectores" */
 .atmosphere {
   background-image: radial-gradient(circle at 50% -10%, #a2d801 0%, transparent 55%);
@@ -140,4 +149,5 @@ details[open] > summary .chevron {
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; }
   details > summary .chevron { transition: none; }
+  .bg-rotate-fade { animation: none; opacity: 0.4; }
 }

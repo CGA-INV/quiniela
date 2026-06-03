@@ -18,6 +18,8 @@ export function ParticleField({ subtle = false }: { subtle?: boolean }) {
     if (reduce) return;
 
     const create = () => {
+      // Tope de nodos vivos para no acumular trabajo de render.
+      if (container.childElementCount > (subtle ? 22 : 55)) return;
       const particle = document.createElement("div");
       const size = Math.random() * 2 + 1;
       particle.className = "absolute rounded-full opacity-0";
@@ -40,7 +42,7 @@ export function ParticleField({ subtle = false }: { subtle?: boolean }) {
       animation.onfinish = () => particle.remove();
     };
 
-    const interval = setInterval(create, subtle ? 320 : 150);
+    const interval = setInterval(create, subtle ? 500 : 160);
     return () => clearInterval(interval);
   }, [subtle]);
 
