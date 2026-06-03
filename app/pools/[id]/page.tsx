@@ -10,6 +10,7 @@ import { getCachedUser } from "@/lib/admin-context";
 import { signOut } from "../../login/actions";
 import { saveAllPredictions } from "./actions";
 import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./payments-actions";
+import Image from "next/image";
 import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
 
@@ -624,8 +625,9 @@ function PaymentsSection({
   const myPayment = payments.find(p => p.payer_id === currentUserId);
 
   return (
-    <section className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-emerald-500/5 p-5">
-      <div className="flex items-center gap-3">
+    <section className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-emerald-500/5 p-5">
+      <Image src="/imagen/trofeo.png" alt="" fill sizes="(min-width:1024px) 50vw, 100vw" className="object-cover opacity-[0.12]" />
+      <div className="relative z-10 flex items-center gap-3">
         <span className="text-2xl">🏆</span>
         <div>
           <h2 className="font-semibold tracking-tight">Fase de grupos terminada</h2>
@@ -637,7 +639,7 @@ function PaymentsSection({
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="relative z-10 mt-4">
         {isWinner
           ? <WinnerView poolId={poolId} memberRows={memberRows} payments={payments} winnerId={winner.user_id} />
           : <PayerView poolId={poolId} winnerName={winner.display_name} myPayment={myPayment} />}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { signUpWithCode } from "./actions";
 
 export default async function SignupPage({
@@ -10,6 +11,8 @@ export default async function SignupPage({
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-5 text-slate-100">
+      <Image src="/imagen/aficion.png" alt="" fill priority sizes="100vw" className="object-cover opacity-50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a1f1c]/70 via-[#0a1f1c]/80 to-[#0a1f1c]/95" />
       <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-20" />
 
       <div className="relative z-10 flex w-full max-w-md flex-col gap-8">
