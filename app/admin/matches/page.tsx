@@ -170,7 +170,7 @@ export default async function AdminMatchesPage({
   const now = Date.now();
 
   return (
-    <main className="min-h-dvh bg-slate-950 text-slate-100">
+    <main className="min-h-dvh text-slate-100">
       <AdminNav
         active="partidos"
         isSuper={isSuper}

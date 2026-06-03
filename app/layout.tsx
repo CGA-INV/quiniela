@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Anton, JetBrains_Mono } from "next/font/google";
+import { AppBackground } from "@/components/AppBackground";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,7 +40,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AppBackground />
+        {children}
+      </body>
     </html>
   );
 }

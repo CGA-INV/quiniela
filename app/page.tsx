@@ -14,7 +14,7 @@ export default async function Home() {
       <div className="fixed inset-0 z-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/onboarding-bg.jpg"
+          src="/imagen/estadio.jpg"
           alt="Atmósfera Mundial 2026"
           className="h-full w-full object-cover"
         />

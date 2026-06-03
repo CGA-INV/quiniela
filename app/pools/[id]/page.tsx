@@ -217,7 +217,7 @@ export default async function PoolDetailPage({
   const prizeCount = ranking.length >= 50 ? 3 : ranking.length >= 30 ? 2 : 1;
 
   return (
-    <main className="min-h-dvh bg-slate-950 text-slate-100">
+    <main className="min-h-dvh text-slate-100">
       {/* Header sticky con backdrop blur */}
       <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">

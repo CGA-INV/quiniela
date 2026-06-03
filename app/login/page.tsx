@@ -9,7 +9,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a1f1c] p-5 text-slate-100">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-5 text-slate-100">
       <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-20" />
 
       <div className="relative z-10 flex w-full max-w-md flex-col gap-8">

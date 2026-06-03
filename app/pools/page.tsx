@@ -40,7 +40,7 @@ export default async function PoolsPage({
   }
 
   return (
-    <main className="relative min-h-screen bg-[#0a1f1c] text-slate-100 pb-16">
+    <main className="relative min-h-screen text-slate-100 pb-16">
       <div className="atmosphere pointer-events-none absolute inset-0 z-0 opacity-[0.12]" />
 
       {/* Top app bar */}

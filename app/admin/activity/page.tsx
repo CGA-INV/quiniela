@@ -72,7 +72,7 @@ export default async function ActivityLogPage({
   const active = filter ?? "all";
 
   return (
-    <main className="min-h-dvh bg-slate-950 text-slate-100">
+    <main className="min-h-dvh text-slate-100">
       <AdminNav
         active="bitacora"
         isSuper={true}

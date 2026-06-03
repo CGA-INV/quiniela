@@ -3,10 +3,11 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Réplica de la animación de partículas del onboarding de Stitch:
- * destellos de luz lima que caen como lluvia/reflectores de estadio.
+ * Animación de partículas: destellos de luz lima que caen como reflectores.
+ * - default: protagonista (onboarding), z-10 sobre el contenido.
+ * - subtle: fondo global, detrás del contenido (-z-10), más tenue y lento.
  */
-export function ParticleField() {
+export function ParticleField({ subtle = false }: { subtle?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,11 +28,11 @@ export function ParticleField() {
       particle.style.top = "-10vh";
       container.appendChild(particle);
 
-      const duration = Math.random() * 1000 + 1000;
+      const duration = Math.random() * 1000 + (subtle ? 2000 : 1000);
       const animation = particle.animate(
         [
           { transform: "translateY(0) rotate(15deg)", opacity: 0 },
-          { transform: "translateY(50vh) rotate(15deg)", opacity: 0.5 },
+          { transform: "translateY(50vh) rotate(15deg)", opacity: subtle ? 0.35 : 0.5 },
           { transform: "translateY(110vh) rotate(15deg)", opacity: 0 },
         ],
         { duration, easing: "linear" },
@@ -39,15 +40,19 @@ export function ParticleField() {
       animation.onfinish = () => particle.remove();
     };
 
-    const interval = setInterval(create, 150);
+    const interval = setInterval(create, subtle ? 320 : 150);
     return () => clearInterval(interval);
-  }, []);
+  }, [subtle]);
 
   return (
     <div
       ref={ref}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-10 opacity-30"
+      className={
+        subtle
+          ? "pointer-events-none fixed inset-0 -z-10 opacity-20"
+          : "pointer-events-none fixed inset-0 z-10 opacity-30"
+      }
     />
   );
 }

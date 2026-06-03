@@ -100,7 +100,7 @@ export default async function AdminPage({
   const poolName = (id: string) => poolList.find(p => p.id === id)?.name ?? "—";
 
   return (
-    <main className="min-h-dvh bg-slate-950 text-slate-100">
+    <main className="min-h-dvh text-slate-100">
       <AdminNav
         active="salas"
         isSuper={isSuper}
