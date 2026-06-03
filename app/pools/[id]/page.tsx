@@ -13,6 +13,7 @@ import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./paymen
 import Image from "next/image";
 import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
+import { WinnerCelebration } from "@/components/WinnerCelebration";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -600,6 +601,9 @@ export default async function PoolDetailPage({
         price={{ tally: voteTally, total: totalVotes, mine: myVote }}
         timing={{ tally: timingTally, total: totalTiming, mine: myTiming }}
       />
+
+      {/* Celebración del ganador al terminar la fase de grupos */}
+      {winner && <WinnerCelebration poolId={id} winnerName={winner.display_name} />}
     </main>
   );
 }
