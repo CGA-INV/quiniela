@@ -8,9 +8,10 @@ import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
 import { getCachedUser } from "@/lib/admin-context";
 import { signOut } from "../../login/actions";
-import { saveAllPredictions, votePrice } from "./actions";
+import { saveAllPredictions } from "./actions";
 import { uploadPaymentProof, validatePayment, unvalidatePayment } from "./payments-actions";
 import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
+import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -84,7 +85,7 @@ export default async function PoolDetailPage({
   if (poolErr || !pool) notFound();
 
   // RPC pool_ranking agrega miembros + stats en server-side (1 query, mucho más rápido).
-  const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }, priceVotesRes] =
+  const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }, priceVotesRes, paymentVotesRes] =
     await Promise.all([
       // Sandbox pool: solo ve sus propios partidos. Pool real: solo globales.
       (pool.is_sandbox
@@ -110,6 +111,10 @@ export default async function PoolDetailPage({
       supabase
         .from("pool_price_votes")
         .select("user_id, price")
+        .eq("pool_id", id),
+      supabase
+        .from("pool_payment_votes")
+        .select("user_id, timing")
         .eq("pool_id", id),
     ]);
 
@@ -194,15 +199,21 @@ export default async function PoolDetailPage({
     m => isPredictionOpen(m.kickoff_at, now),
   ).length;
 
-  // Encuesta de precio (graceful si la tabla aún no existe)
+  // Encuestas (graceful si las tablas aún no existen)
   const priceVotes = (priceVotesRes?.data ?? []) as { user_id: string; price: number }[];
-  const priceOptions = [3, 4, 5] as const;
   const voteTally: Record<number, number> = { 3: 0, 4: 0, 5: 0 };
   for (const v of priceVotes) if (voteTally[v.price] !== undefined) voteTally[v.price]++;
   const totalVotes = priceVotes.length;
   const myVote = priceVotes.find(v => v.user_id === user.id)?.price;
-  let leadingPrice: number = priceOptions[0];
-  for (const p of priceOptions) if (voteTally[p] > voteTally[leadingPrice]) leadingPrice = p;
+
+  const paymentVotes = (paymentVotesRes?.data ?? []) as { user_id: string; timing: string }[];
+  const timingTally: Record<string, number> = { antes: 0, despues: 0 };
+  for (const v of paymentVotes) if (timingTally[v.timing] !== undefined) timingTally[v.timing]++;
+  const totalTiming = paymentVotes.length;
+  const myTiming = paymentVotes.find(v => v.user_id === user.id)?.timing;
+
+  // Si no votó en ambas, el modal aparece al abrir la sala.
+  const needsVote = !myVote || !myTiming;
   const prizeCount = ranking.length >= 50 ? 3 : ranking.length >= 30 ? 2 : 1;
 
   return (
@@ -450,55 +461,19 @@ export default async function PoolDetailPage({
                 </RuleCard>
               </div>
 
-              {/* Encuesta de precio */}
+              {/* Encuestas */}
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-300">
+                ⏳ Estas votaciones cierran antes del domingo.
+              </p>
               <div className="glass-panel rounded-2xl p-5">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                  ¿Cuánto debería costar la quiniela?
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  Fase de grupos · gana el precio más votado · {totalVotes} voto{totalVotes === 1 ? "" : "s"}
-                </p>
-                <form action={votePrice} className="mt-4 grid grid-cols-3 gap-2">
-                  <input type="hidden" name="pool_id" value={id} />
-                  {priceOptions.map(p => {
-                    const count = voteTally[p];
-                    const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-                    const mine = myVote === p;
-                    return (
-                      <button
-                        key={p}
-                        type="submit"
-                        name="price"
-                        value={p}
-                        className={[
-                          "relative overflow-hidden rounded-xl border px-3 py-4 text-center transition active:scale-95",
-                          mine
-                            ? "border-[#c6ff3d] bg-[#c6ff3d]/10"
-                            : "border-slate-700 bg-slate-800/50 hover:border-[#c6ff3d]/40",
-                        ].join(" ")}
-                      >
-                        <span
-                          className="absolute inset-x-0 bottom-0 bg-[#c6ff3d]/15"
-                          style={{ height: `${pct}%` }}
-                          aria-hidden
-                        />
-                        <span className="relative block font-display text-2xl text-[#c6ff3d]">${p}</span>
-                        <span className="relative mt-1 block font-mono text-[10px] uppercase tracking-wider text-slate-400">
-                          {count} ({pct}%){mine ? " · tú" : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </form>
-                {totalVotes > 0 && (
-                  <p className="mt-3 text-center text-sm text-slate-300">
-                    Va ganando: <strong className="text-[#c6ff3d]">${leadingPrice} USD</strong>
-                  </p>
-                )}
-                <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-wider text-slate-500">
-                  Toca una opción para votar · puedes cambiar tu voto
-                </p>
+                <PricePoll poolId={id} tally={voteTally} total={totalVotes} mine={myVote} />
               </div>
+              <div className="glass-panel rounded-2xl p-5">
+                <TimingPoll poolId={id} tally={timingTally} total={totalTiming} mine={myTiming} />
+              </div>
+              <p className="text-center font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                Toca una opción para votar · puedes cambiar tu voto
+              </p>
             </section>
           </main>
 
@@ -615,6 +590,14 @@ export default async function PoolDetailPage({
         poolId={id}
         active={activeTab}
         pagosBadge={!!winner && !payments?.some(p => p.payer_id === user.id && p.validated_at)}
+      />
+
+      {/* Modal de votaciones al abrir la sala (si falta votar alguna) */}
+      <VotePromptModal
+        needsVote={needsVote}
+        poolId={id}
+        price={{ tally: voteTally, total: totalVotes, mine: myVote }}
+        timing={{ tally: timingTally, total: totalTiming, mine: myTiming }}
       />
     </main>
   );

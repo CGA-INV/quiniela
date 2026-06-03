@@ -135,3 +135,36 @@ export async function votePrice(formData: FormData) {
   revalidatePath(`/pools/${poolId}`);
   redirect(`/pools/${poolId}?tab=reglas&ok=${encodeURIComponent(`Votaste $${price} USD`)}`);
 }
+
+/** Voto: ¿se paga antes o después de saber el ganador? Un voto por miembro. */
+export async function votePaymentTiming(formData: FormData) {
+  const poolId = String(formData.get("pool_id") ?? "");
+  const timing = String(formData.get("timing") ?? "");
+  if (!poolId) redirect("/pools?error=Sala%20inv%C3%A1lida");
+  if (!["antes", "despues"].includes(timing)) {
+    redirect(`/pools/${poolId}?tab=reglas&error=Voto%20inv%C3%A1lido`);
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: member } = await supabase
+    .from("pool_members")
+    .select("user_id")
+    .eq("pool_id", poolId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!member) redirect(`/pools/${poolId}?tab=reglas&error=No%20eres%20miembro%20de%20esta%20sala`);
+
+  const { error } = await supabase
+    .from("pool_payment_votes")
+    .upsert({ pool_id: poolId, user_id: user.id, timing }, { onConflict: "pool_id,user_id" });
+
+  if (error) {
+    redirect(`/pools/${poolId}?tab=reglas&error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath(`/pools/${poolId}`);
+  redirect(`/pools/${poolId}?tab=reglas&ok=${encodeURIComponent("Voto registrado")}`);
+}
