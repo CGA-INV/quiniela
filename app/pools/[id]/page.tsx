@@ -707,7 +707,7 @@ function WinnerView({
                   )}
                   {p?.validated_at && (
                     <span className="text-emerald-400">
-                      Validado · {new Date(p.validated_at).toLocaleDateString("es-MX")}
+                      Validado · {new Date(p.validated_at).toLocaleDateString("es-VE", { timeZone: "America/Caracas" })}
                     </span>
                   )}
                 </div>
@@ -828,8 +828,8 @@ function PayerView({
         {validated && (
           <p className="text-xs text-slate-400">
             Tu pago fue validado el{" "}
-            {new Date(myPayment!.validated_at!).toLocaleDateString("es-MX", {
-              day: "2-digit", month: "long", year: "numeric",
+            {new Date(myPayment!.validated_at!).toLocaleDateString("es-VE", {
+              timeZone: "America/Caracas", day: "2-digit", month: "long", year: "numeric",
             })}
             . ¡Gracias!
           </p>

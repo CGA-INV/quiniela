@@ -15,7 +15,8 @@ type LogRow = {
 };
 
 function fmtFull(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
+  return new Date(iso).toLocaleString("es-VE", {
+    timeZone: "America/Caracas",
     day: "2-digit",
     month: "short",
     hour: "2-digit",

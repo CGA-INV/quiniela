@@ -15,6 +15,18 @@ function nullable(s: string) {
   return v === "" ? null : v;
 }
 
+/**
+ * Interpreta un datetime-local (sin zona, ej. "2026-06-11T18:00") como hora
+ * de Venezuela (UTC-4) y lo convierte al instante UTC correcto. Si el valor
+ * ya trae zona (Z o ±HH:MM), se respeta tal cual.
+ */
+function toVenezuelaIso(local: string): string {
+  const hasTz = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(local);
+  if (hasTz) return new Date(local).toISOString();
+  const withSecs = /T\d{2}:\d{2}$/.test(local) ? `${local}:00` : local;
+  return new Date(`${withSecs}-04:00`).toISOString();
+}
+
 export async function createMatch(formData: FormData) {
   const stage = String(formData.get("stage") ?? "");
   const groupLabel = nullable(String(formData.get("group_label") ?? ""))?.toUpperCase() ?? null;
@@ -47,7 +59,7 @@ export async function createMatch(formData: FormData) {
     group_label: groupLabel,
     home_team: homeTeam,
     away_team: awayTeam,
-    kickoff_at: new Date(kickoff).toISOString(),
+    kickoff_at: toVenezuelaIso(kickoff),
     venue,
     city,
     match_no: matchNo,
@@ -242,7 +254,7 @@ function coerceImport(raw: unknown): { row: ImportRow; reason?: string } | { err
       group_label: groupLabel,
       home_team: homeTeam,
       away_team: awayTeam,
-      kickoff_at: kickoffDate.toISOString(),
+      kickoff_at: toVenezuelaIso(kickoffRaw),
       venue,
       city,
       match_no: matchNo,

@@ -11,8 +11,12 @@ export function isPredictionOpen(kickoffIso: string, now = Date.now()): boolean 
   return now < lockAtMs(kickoffIso);
 }
 
+// Zona horaria de Venezuela (UTC-4, sin horario de verano).
+export const TZ_VENEZUELA = "America/Caracas";
+
 export function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  return new Date(iso).toLocaleString("es-VE", {
+    timeZone: TZ_VENEZUELA,
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -22,7 +26,8 @@ export function fmtDate(iso: string): string {
 }
 
 export function fmtDateLong(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  return new Date(iso).toLocaleString("es-VE", {
+    timeZone: TZ_VENEZUELA,
     weekday: "long",
     day: "2-digit",
     month: "long",
