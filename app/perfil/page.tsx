@@ -51,6 +51,28 @@ export default async function PerfilPage({
     .sort((a, b) => new Date(b.m.kickoff_at).getTime() - new Date(a.m.kickoff_at).getTime())
     .slice(0, 12);
 
+  // Logros (derivados de las predicciones)
+  const allFinishedAsc = predList
+    .map(p => ({ p, m: mInfo(p) }))
+    .filter((x): x is { p: PredRow; m: MatchInfo } => !!x.m && x.m.finished && x.m.home_score != null)
+    .sort((a, b) => new Date(a.m.kickoff_at).getTime() - new Date(b.m.kickoff_at).getTime());
+  let bestStreak = 0;
+  let curStreak = 0;
+  for (const x of allFinishedAsc) {
+    if (x.p.points > 0) { curStreak++; bestStreak = Math.max(bestStreak, curStreak); } else curStreak = 0;
+  }
+  const achievements = [
+    { icon: "🎯", name: "Primer exacto", desc: "1 marcador exacto", earned: exactos >= 1 },
+    { icon: "🏹", name: "Francotirador", desc: "5 exactos", earned: exactos >= 5 },
+    { icon: "🔮", name: "Oráculo", desc: "10 exactos", earned: exactos >= 10 },
+    { icon: "⭐", name: "50 puntos", desc: "50 puntos", earned: totalPts >= 50 },
+    { icon: "🌟", name: "100 puntos", desc: "100 puntos", earned: totalPts >= 100 },
+    { icon: "🔥", name: "En racha", desc: "3 aciertos seguidos", earned: bestStreak >= 3 },
+    { icon: "💥", name: "Imparable", desc: "5 aciertos seguidos", earned: bestStreak >= 5 },
+    { icon: "📅", name: "Fiel", desc: "30 partidos predichos", earned: predichos >= 30 },
+  ];
+  const earnedCount = achievements.filter(a => a.earned).length;
+
   type M = { pool_id: string; pools: { name: string } | { name: string }[] | null };
   const pools = ((memberships ?? []) as M[]).map(m => ({
     id: m.pool_id,
@@ -105,6 +127,29 @@ export default async function PerfilPage({
           <Stat label="Exactos" value={exactos} />
           <Stat label="Predichos" value={predichos} />
           <Stat label="Salas" value={pools.length} />
+        </section>
+
+        {/* Logros */}
+        <section className="glass-panel rounded-2xl p-5">
+          <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-wider text-slate-300">
+            Logros <span className="text-slate-500">({earnedCount}/{achievements.length})</span>
+          </h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {achievements.map((a, i) => (
+              <div
+                key={i}
+                className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center ${
+                  a.earned ? "border-[#c6ff3d]/30 bg-[#c6ff3d]/5" : "border-white/5 bg-slate-800/20"
+                }`}
+              >
+                <span className="text-2xl" style={a.earned ? undefined : { filter: "grayscale(1) opacity(0.5)" }}>
+                  {a.icon}
+                </span>
+                <span className={`text-[11px] font-bold ${a.earned ? "text-slate-100" : "text-slate-500"}`}>{a.name}</span>
+                <span className="text-[9px] leading-tight text-slate-500">{a.desc}</span>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Mis salas */}

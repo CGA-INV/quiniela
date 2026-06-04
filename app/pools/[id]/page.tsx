@@ -17,6 +17,7 @@ import { WinnerCelebration } from "@/components/WinnerCelebration";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { ScoreStepper } from "@/components/ScoreStepper";
 import { LiveRefresher } from "@/components/LiveRefresher";
+import { ShareButton } from "@/components/ShareButton";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -224,6 +225,13 @@ export default async function PoolDetailPage({
   // Si no votó en ambas, el modal aparece al abrir la sala.
   const needsVote = !myVote || !myTiming;
   const prizeCount = ranking.length >= 50 ? 3 : ranking.length >= 30 ? 2 : 1;
+
+  // Texto para compartir el ranking
+  const shareText = ranking.length > 0
+    ? `🏆 Ranking ${pool.name} · Mundial 2026\n` +
+      ranking.slice(0, 3).map((r, i) => `${i + 1}. ${r.display_name} — ${r.total} pts`).join("\n") +
+      (myRank > 0 ? `\nTú: #${myRank} con ${myStats.total} pts` : "")
+    : "";
 
   // Fondo según la pestaña activa
   const tabBackground: Record<PoolTab, string> = {
@@ -521,6 +529,7 @@ export default async function PoolDetailPage({
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
                   {pool.name} • {ranking.length} {ranking.length === 1 ? "jugador" : "jugadores"}
                 </p>
+                {shareText && <ShareButton text={shareText} />}
               </div>
 
               {ranking.length === 0 ? (
