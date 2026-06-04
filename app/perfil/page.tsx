@@ -35,7 +35,7 @@ export default async function PerfilPage({
     pts: ptsByPool.get(m.pool_id) ?? 0,
   }));
 
-  const name = profile?.display_name ?? user.email ?? "—";
+  const name: string = profile?.display_name ?? user.email ?? "—";
   const initials = name.split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
   const inputCls =
