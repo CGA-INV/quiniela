@@ -18,6 +18,7 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { ScoreStepper } from "@/components/ScoreStepper";
 import { LiveRefresher } from "@/components/LiveRefresher";
 import { ShareButton } from "@/components/ShareButton";
+import { MyRankMovement } from "@/components/MyRankMovement";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -529,6 +530,7 @@ export default async function PoolDetailPage({
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
                   {pool.name} • {ranking.length} {ranking.length === 1 ? "jugador" : "jugadores"}
                 </p>
+                <MyRankMovement poolId={id} rank={myRank} />
                 {shareText && <ShareButton text={shareText} />}
               </div>
 
