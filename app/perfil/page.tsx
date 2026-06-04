@@ -17,16 +17,39 @@ export default async function PerfilPage({
 
   const [{ data: profile }, { data: preds }, { data: memberships }] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
-    supabase.from("predictions").select("points, pool_id").eq("user_id", user.id),
+    supabase.from("predictions").select("pred_home, pred_away, points, pool_id, matches(home_team, away_team, home_score, away_score, finished, kickoff_at)").eq("user_id", user.id),
     supabase.from("pool_members").select("pool_id, pools(name)").eq("user_id", user.id),
   ]);
 
-  const predList = (preds ?? []) as { points: number; pool_id: string }[];
+  type MatchInfo = {
+    home_team: string;
+    away_team: string;
+    home_score: number | null;
+    away_score: number | null;
+    finished: boolean;
+    kickoff_at: string;
+  };
+  type PredRow = {
+    pred_home: number;
+    pred_away: number;
+    points: number;
+    pool_id: string;
+    matches: MatchInfo | MatchInfo[] | null;
+  };
+  const predList = (preds ?? []) as PredRow[];
   const totalPts = predList.reduce((a, p) => a + (p.points ?? 0), 0);
   const exactos = predList.filter(p => p.points === 5).length;
   const predichos = predList.length;
   const ptsByPool = new Map<string, number>();
   for (const p of predList) ptsByPool.set(p.pool_id, (ptsByPool.get(p.pool_id) ?? 0) + (p.points ?? 0));
+
+  // Historial: últimas predicciones de partidos finalizados
+  const mInfo = (p: PredRow) => (Array.isArray(p.matches) ? p.matches[0] : p.matches);
+  const history = predList
+    .map(p => ({ p, m: mInfo(p) }))
+    .filter((x): x is { p: PredRow; m: MatchInfo } => !!x.m && x.m.finished && x.m.home_score != null)
+    .sort((a, b) => new Date(b.m.kickoff_at).getTime() - new Date(a.m.kickoff_at).getTime())
+    .slice(0, 12);
 
   type M = { pool_id: string; pools: { name: string } | { name: string }[] | null };
   const pools = ((memberships ?? []) as M[]).map(m => ({
@@ -98,6 +121,26 @@ export default async function PerfilPage({
                     <span className="truncate">{p.name}</span>
                     <span className="font-mono tabular-nums text-[#c6ff3d]">{p.pts} pts</span>
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Historial reciente */}
+        {history.length > 0 && (
+          <section className="glass-panel rounded-2xl p-5">
+            <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-wider text-slate-300">Historial reciente</h2>
+            <ul className="space-y-1.5">
+              {history.map(({ p, m }, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800/20 px-3 py-2 text-sm">
+                  <span className="min-w-0 truncate">
+                    {m.home_team} <span className="font-mono text-slate-400">{m.home_score}–{m.away_score}</span> {m.away_team}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2 font-mono text-xs">
+                    <span className="text-slate-400">tú {p.pred_home}–{p.pred_away}</span>
+                    <span className={p.points > 0 ? "font-bold text-[#c6ff3d]" : "text-slate-500"}>{p.points} pts</span>
+                  </span>
                 </li>
               ))}
             </ul>
