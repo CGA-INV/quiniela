@@ -16,6 +16,7 @@ import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
 import { WinnerCelebration } from "@/components/WinnerCelebration";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { ScoreStepper } from "@/components/ScoreStepper";
+import { LiveRefresher } from "@/components/LiveRefresher";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -637,6 +638,9 @@ export default async function PoolDetailPage({
 
       {/* Celebración del ganador al terminar la fase de grupos */}
       {winner && <WinnerCelebration poolId={id} winnerName={winner.display_name} />}
+
+      {/* Auto-refresco de marcadores mientras haya partidos en vivo */}
+      <LiveRefresher active={liveMatches.length > 0} />
     </main>
   );
 }
