@@ -65,6 +65,9 @@ export default async function PoolsPage({
               Panel admin
             </Link>
           )}
+          <Link href="/perfil" className="text-slate-400 transition hover:text-[#c6ff3d]">
+            Perfil
+          </Link>
           <form action={signOut}>
             <button className="text-slate-400 transition hover:text-slate-200">
               Salir

@@ -262,6 +262,9 @@ export default async function PoolDetailPage({
                 {isSuper ? "Admin" : "Panel"}
               </Link>
             )}
+            <Link href="/perfil" className="rounded-md px-2 py-1.5 text-xs text-slate-400 transition hover:bg-slate-800 hover:text-slate-100">
+              Perfil
+            </Link>
             <form action={signOut}>
               <button className="rounded-md px-2 py-1.5 text-xs text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition">
                 Salir
