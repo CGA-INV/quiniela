@@ -24,7 +24,7 @@ export async function saveAllPredictions(formData: FormData) {
 
   const matchIds = Array.from(homes.keys());
   if (matchIds.length === 0) {
-    redirect(`/pools/${poolId}?error=No%20hay%20datos%20para%20guardar`);
+    redirect(`/pools/${poolId}?tab=partidos&error=No%20hay%20datos%20para%20guardar`);
   }
 
   // Pre-filtramos los partidos cuyo plazo ya cerró (race entre carga y submit).
@@ -79,11 +79,11 @@ export async function saveAllPredictions(formData: FormData) {
 
   if (rows.length === 0) {
     if (lockedOut > 0) {
-      redirect(`/pools/${poolId}?error=${encodeURIComponent(
+      redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(
         `Ya cerró el plazo (1 hora antes del kickoff). No se guardó nada.`,
       )}`);
     }
-    redirect(`/pools/${poolId}?error=No%20hay%20predicciones%20v%C3%A1lidas%20para%20guardar`);
+    redirect(`/pools/${poolId}?tab=partidos&error=No%20hay%20predicciones%20v%C3%A1lidas%20para%20guardar`);
   }
 
   const { error } = await supabase
@@ -91,14 +91,14 @@ export async function saveAllPredictions(formData: FormData) {
     .upsert(rows, { onConflict: "user_id,pool_id,match_id" });
 
   if (error) {
-    redirect(`/pools/${poolId}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath(`/pools/${poolId}`);
   const parts = [`${rows.length} predicciones guardadas`];
   if (lockedOut > 0) parts.push(`${lockedOut} ya habían cerrado`);
   if (invalid > 0) parts.push(`${invalid} con error`);
-  redirect(`/pools/${poolId}?ok=${encodeURIComponent(parts.join(" · "))}`);
+  redirect(`/pools/${poolId}?tab=partidos&ok=${encodeURIComponent(parts.join(" · "))}`);
 }
 
 /** Voto en la encuesta de precio de la quiniela (3, 4 o 5 USD). Un voto por

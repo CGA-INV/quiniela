@@ -15,6 +15,7 @@ import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
 import { WinnerCelebration } from "@/components/WinnerCelebration";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { ScoreStepper } from "@/components/ScoreStepper";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -285,7 +286,8 @@ export default async function PoolDetailPage({
           </div>
         )}
         {ok && (
-          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-300">
+            <span className="text-base">✓</span>
             {decodeURIComponent(ok)}
           </div>
         )}
@@ -1098,6 +1100,8 @@ function MatchCard({
       ? "md:col-span-2 border-emerald-500/40 ring-1 ring-emerald-500/20"
       : finished
       ? "border-slate-800 hover:border-slate-700"
+      : open && closingSoon
+      ? "border-amber-500/50 ring-1 ring-amber-500/25"
       : open
       ? "border-slate-800 hover:border-emerald-500/30"
       : "border-slate-800",
@@ -1132,6 +1136,11 @@ function MatchCard({
               <span className="ml-1 font-mono">{m.home_score}–{m.away_score}</span>
             )}
           </span>
+        ) : open && closingSoon ? (
+          <span className="flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 font-semibold text-amber-400">
+            <span className="live-dot inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
+            cierra pronto
+          </span>
         ) : open ? (
           <span className="text-emerald-400">abierto</span>
         ) : (
@@ -1147,24 +1156,10 @@ function MatchCard({
           </span>
 
           {open ? (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <input
-                name={`home_${m.id}`}
-                type="number"
-                min="0"
-                max="20"
-                defaultValue={pred?.pred_home ?? ""}
-                className="w-12 rounded-xl border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-center font-mono text-lg font-bold tabular-nums text-[#c6ff3d] focus:border-[#c6ff3d] focus:outline-none focus:ring-2 focus:ring-[#c6ff3d]/30"
-              />
+            <div className="flex shrink-0 items-center gap-2">
+              <ScoreStepper name={`home_${m.id}`} defaultValue={pred?.pred_home ?? null} />
               <span className="text-slate-500">–</span>
-              <input
-                name={`away_${m.id}`}
-                type="number"
-                min="0"
-                max="20"
-                defaultValue={pred?.pred_away ?? ""}
-                className="w-12 rounded-xl border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-center font-mono text-lg font-bold tabular-nums text-[#c6ff3d] focus:border-[#c6ff3d] focus:outline-none focus:ring-2 focus:ring-[#c6ff3d]/30"
-              />
+              <ScoreStepper name={`away_${m.id}`} defaultValue={pred?.pred_away ?? null} />
             </div>
           ) : (
             <div className={`flex items-center gap-1.5 font-mono tabular-nums shrink-0 ${live ? "text-3xl" : "text-lg"}`}>
