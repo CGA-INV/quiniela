@@ -1176,15 +1176,19 @@ function MatchCard({
       )}
 
       {!open && (
-        <div className="mt-2 flex items-center justify-between border-t border-slate-800/60 pt-2 text-xs">
-          <span className="text-slate-500">
-            {pred ? "Ver predicciones de todos →" : "No participaste"}
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-800/60 pt-2 text-xs">
+          <span className="flex items-center gap-1 font-medium text-[#c6ff3d]">
+            Ver predicciones de todos
+            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
           </span>
-          {finished && pred && (
-            <span className={pred.points > 0 ? "text-emerald-400 font-medium" : "text-slate-500"}>
-              {pred.points} pts
-            </span>
-          )}
+          <span className="flex items-center gap-2">
+            {!pred && <span className="italic text-slate-500">no participaste</span>}
+            {finished && pred && (
+              <span className={pred.points > 0 ? "font-medium text-[#c6ff3d]" : "text-slate-500"}>
+                {pred.points} pts
+              </span>
+            )}
+          </span>
         </div>
       )}
     </>
