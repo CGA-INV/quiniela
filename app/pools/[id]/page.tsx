@@ -87,6 +87,10 @@ export default async function PoolDetailPage({
     .single();
   if (poolErr || !pool) notFound();
 
+  // Link del grupo de WhatsApp (tolerante si la columna aún no existe)
+  const { data: waData } = await supabase.from("pools").select("whatsapp_url").eq("id", id).maybeSingle();
+  const whatsappUrl = (waData as { whatsapp_url?: string | null } | null)?.whatsapp_url ?? null;
+
   // RPC pool_ranking agrega miembros + stats en server-side (1 query, mucho más rápido).
   const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }, priceVotesRes, paymentVotesRes] =
     await Promise.all([
@@ -357,6 +361,17 @@ export default async function PoolDetailPage({
                 compact
               />
             </section>
+
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`items-center justify-center gap-2 rounded-xl border border-green-500/40 bg-green-500/15 px-4 py-3 text-sm font-medium text-green-300 transition hover:bg-green-500/25 ${activeTab === "inicio" ? "flex" : "hidden lg:flex"}`}
+              >
+                💬 Unirse al grupo de WhatsApp
+              </a>
+            )}
 
             {/* Posiciones por grupo - bento - colapsable */}
             {groupLabels.length > 0 && (

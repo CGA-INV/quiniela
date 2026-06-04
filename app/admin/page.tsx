@@ -11,6 +11,7 @@ import {
   addExistingMember,
   deleteUser,
   deletePool,
+  setPoolWhatsapp,
 } from "./actions";
 import { AdminNav } from "@/components/AdminNav";
 import { ScreenBackground } from "@/components/ScreenBackground";
@@ -69,6 +70,14 @@ export default async function AdminPage({
 
   // Miembros + invitaciones en paralelo (ambos dependen de poolIds).
   const poolIds = poolList.map(p => p.id);
+  // Tolerante si la columna whatsapp_url aún no existe (antes de la migración).
+  const { data: waRows } = poolIds.length > 0
+    ? await supabase.from("pools").select("id, whatsapp_url").in("id", poolIds)
+    : { data: [] as { id: string; whatsapp_url: string | null }[] };
+  const whatsappByPool = new Map<string, string | null>();
+  for (const r of (waRows ?? []) as { id: string; whatsapp_url: string | null }[]) {
+    whatsappByPool.set(r.id, r.whatsapp_url);
+  }
   const [{ data: members }, { data: invitations }] = poolIds.length > 0
     ? await Promise.all([
         supabase
@@ -183,6 +192,7 @@ export default async function AdminPage({
                   members={membersByPool.get(p.id) ?? []}
                   isSuper={isSuper}
                   allProfiles={profileList}
+                  whatsapp={whatsappByPool.get(p.id) ?? null}
                 />
               ))}
             </div>
@@ -306,11 +316,13 @@ function PoolCard({
   members,
   isSuper,
   allProfiles,
+  whatsapp,
 }: {
   pool: Pool;
   members: { user_id: string; display_name: string; is_admin: boolean }[];
   isSuper: boolean;
   allProfiles: { id: string; display_name: string }[];
+  whatsapp: string | null;
 }) {
   const memberIds = new Set(members.map(m => m.user_id));
   const candidates = allProfiles.filter(p => !memberIds.has(p.id));
@@ -358,6 +370,19 @@ function PoolCard({
         />
         <button className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition active:scale-95 whitespace-nowrap">
           Generar código
+        </button>
+      </form>
+
+      <form action={setPoolWhatsapp} className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <input type="hidden" name="pool_id" value={pool.id} />
+        <input
+          name="whatsapp_url"
+          defaultValue={whatsapp ?? ""}
+          placeholder="Link del grupo de WhatsApp (chat.whatsapp.com/...)"
+          className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+        />
+        <button className="whitespace-nowrap rounded-lg border border-emerald-500/40 px-3 py-1.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/10">
+          Guardar WhatsApp
         </button>
       </form>
 

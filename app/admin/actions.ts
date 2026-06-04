@@ -100,6 +100,24 @@ export async function addExistingMember(formData: FormData) {
   );
 }
 
+/** Guarda el link del grupo de WhatsApp de la sala — super O admin de la sala. */
+export async function setPoolWhatsapp(formData: FormData) {
+  const poolId = String(formData.get("pool_id") ?? "").trim();
+  let url = String(formData.get("whatsapp_url") ?? "").trim();
+  if (!poolId) redirect("/admin?error=Sala%20requerida");
+  if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+
+  const { supabase } = await requireAdminForPool(poolId);
+  const { error } = await supabase
+    .from("pools")
+    .update({ whatsapp_url: url || null })
+    .eq("id", poolId);
+  if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/admin");
+  redirect(`/admin?ok=${encodeURIComponent(url ? "Link de WhatsApp guardado" : "Link de WhatsApp quitado")}`);
+}
+
 /** Generar código de invitación — super O admin de esta sala. */
 export async function generateInvitation(formData: FormData) {
   const poolId = String(formData.get("pool_id") ?? "").trim();
