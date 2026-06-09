@@ -12,6 +12,7 @@
 // tabla oficial.
 
 import { buildStandings } from "@/lib/standings";
+import { THIRD_ALLOCATION, THIRD_MATCH_ORDER } from "@/lib/bracket-thirds-table";
 
 export type BracketMatch = {
   match_no: number | null;
@@ -103,18 +104,26 @@ function decideKO(m: BracketMatch | undefined): { winner: string | null; loser: 
 }
 
 /**
- * Empareja los 8 mejores terceros con sus 8 llaves respetando los grupos
- * candidatos de cada una (matching bipartito, algoritmo de Kuhn). Devuelve
- * match_no → letra de grupo del tercero asignado. Garantiza emparejamiento
- * completo cuando existe (siempre existe con los 8 terceros clasificados).
+ * Asigna los 8 mejores terceros a sus 8 llaves según la TABLA OFICIAL de FIFA
+ * (lib/bracket-thirds-table.ts, las 495 combinaciones del Anexo C). Devuelve
+ * match_no → letra de grupo del tercero asignado.
+ *
+ * Importante: para cada combinación hay muchos emparejamientos válidos posibles
+ * (3 a 214); FIFA elige uno específico, así que NO se puede derivar con un
+ * algoritmo — hay que consultar la tabla oficial.
  */
 function assignThirds(qualifiedGroups: string[]): Map<number, string> {
-  const groupToMatch = new Map<string, number>(); // grupo → llave asignada
-  const matchToGroup = new Map<number, string>(); // llave → grupo asignado
+  const matchToGroup = new Map<number, string>();
+  const key = [...qualifiedGroups].sort().join("");
+  const val = THIRD_ALLOCATION[key];
+  if (val && val.length === THIRD_MATCH_ORDER.length) {
+    THIRD_MATCH_ORDER.forEach((m, i) => matchToGroup.set(m, val[i]));
+    return matchToGroup;
+  }
+  // Fallback (no debería ocurrir: la tabla cubre las 495 combinaciones):
+  // matching bipartito válido por si la clave llegara incompleta.
+  const groupToMatch = new Map<string, number>();
   const slotByMatch = new Map(THIRD_SLOTS.map((s) => [s.match, s]));
-
-  // Kuhn: para cada slot busca un camino aumentante que le asigne un grupo
-  // candidato libre, reubicando dueños previos si hace falta.
   const augment = (slotMatch: number, seen: Set<string>): boolean => {
     const slot = slotByMatch.get(slotMatch)!;
     for (const g of slot.groups) {
@@ -129,7 +138,6 @@ function assignThirds(qualifiedGroups: string[]): Map<number, string> {
     }
     return false;
   };
-
   for (const slot of THIRD_SLOTS) augment(slot.match, new Set());
   return matchToGroup;
 }

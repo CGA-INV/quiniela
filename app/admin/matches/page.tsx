@@ -356,9 +356,10 @@ export default async function AdminMatchesPage({
           {isSuper && (
             <p className="mb-4 text-xs text-slate-500">
               Las llaves eliminatorias (32avos → final) se llenan solas al cerrar
-              los partidos: clasificados de grupos y ganadores que avanzan. Puedes
-              corregir cualquier equipo a mano con el selector. Los <strong>terceros</strong>{" "}
-              se asignan automático — conviene verificarlos contra el bracket oficial.
+              los partidos: clasificados de grupos y ganadores que avanzan. La
+              asignación de los <strong>8 mejores terceros</strong> usa la tabla
+              oficial de FIFA (las 495 combinaciones). Si algo no cuadra, puedes
+              corregir cualquier equipo a mano con el selector.
             </p>
           )}
 
