@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin-context";
 import { fmtDate, timeUntil } from "@/lib/time";
 import { Flag } from "@/components/Flag";
-import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches } from "./actions";
+import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches, updateMatchTeams } from "./actions";
 import { AdminNav } from "@/components/AdminNav";
 import { ScreenBackground } from "@/components/ScreenBackground";
 
@@ -133,6 +133,11 @@ export default async function AdminMatchesPage({
     if (activeStatus === "done") return m.finished;
     return true;
   });
+
+  // Equipos reales (de la fase de grupos) para llenar las llaves eliminatorias
+  const teamNames = Array.from(
+    new Set(matchListAll.filter(m => m.stage === "group").flatMap(m => [m.home_team, m.away_team])),
+  ).filter(t => !/por definir/i.test(t)).sort((a, b) => a.localeCompare(b));
 
   // Counts por status (sobre el scope ya filtrado)
   const statusCounts = matchesByScope.reduce(
@@ -429,6 +434,37 @@ export default async function AdminMatchesPage({
                         </div>
                       )}
                     </div>
+
+                    {m.stage !== "group" && !m.finished && (
+                      <form action={updateMatchTeams} className="mt-3 flex flex-wrap items-end gap-2 border-t border-slate-800 pt-3">
+                        <input type="hidden" name="id" value={m.id} />
+                        <label className="text-xs text-slate-400">
+                          Local
+                          <select
+                            name="home_team"
+                            defaultValue={m.home_team}
+                            className="mt-0.5 block rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+                          >
+                            <option value="Local por definir">— Por definir —</option>
+                            {teamNames.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </label>
+                        <label className="text-xs text-slate-400">
+                          Visitante
+                          <select
+                            name="away_team"
+                            defaultValue={m.away_team}
+                            className="mt-0.5 block rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+                          >
+                            <option value="Visitante por definir">— Por definir —</option>
+                            {teamNames.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </label>
+                        <button className="rounded-md border border-blue-500/40 px-3 py-1.5 text-sm font-medium text-blue-300 transition hover:bg-blue-500/10">
+                          Guardar equipos
+                        </button>
+                      </form>
+                    )}
 
                     <div className="mt-3 flex items-end justify-between gap-3 flex-wrap">
                       {m.finished ? (

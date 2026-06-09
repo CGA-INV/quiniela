@@ -71,6 +71,25 @@ export async function createMatch(formData: FormData) {
   redirect("/admin/matches?ok=Partido%20agregado");
 }
 
+/** Asigna los equipos de un partido (para llenar las llaves eliminatorias). */
+export async function updateMatchTeams(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const home = String(formData.get("home_team") ?? "").trim();
+  const away = String(formData.get("away_team") ?? "").trim();
+  if (!id || !home || !away) redirect("/admin/matches?error=Datos%20incompletos");
+  if (home === away) redirect("/admin/matches?error=Los%20equipos%20deben%20ser%20distintos");
+
+  const { supabase } = await requireSuper();
+  const { error } = await supabase
+    .from("matches")
+    .update({ home_team: home, away_team: away })
+    .eq("id", id);
+  if (error) redirect(`/admin/matches?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/admin/matches");
+  redirect("/admin/matches?ok=Equipos%20actualizados");
+}
+
 /** Actualiza el score en vivo sin cerrar el partido (mantiene finished=false). */
 export async function updateMatchScore(formData: FormData) {
   const id = String(formData.get("id") ?? "");
