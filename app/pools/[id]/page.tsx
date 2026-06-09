@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDate, timeUntil, isPredictionOpen, lockAtMs } from "@/lib/time";
+import { fmtDate, timeUntil, isPredictionOpen, lockAtMs, PREDICTIONS_DEADLINE_ISO } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
 import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
@@ -196,6 +196,7 @@ export default async function PoolDetailPage({
 
   // Partidos por predecir (abiertos) para el KPI
   const openCount = matchList.filter(m => isPredictionOpen(m.kickoff_at, now)).length;
+  const predOpen = isPredictionOpen(undefined, now);
 
   // Conteo por fase y filtro por fase
   const stageCounts: Record<string, number> = { all: matchList.length };
@@ -419,6 +420,14 @@ export default async function PoolDetailPage({
                   <h2 className="text-xl uppercase tracking-tight">Partidos</h2>
                 </div>
 
+                <div className={`mb-3 rounded-xl border px-4 py-2.5 text-sm ${predOpen ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
+                  {predOpen ? (
+                    <>⏰ Cierre de predicciones: <strong>10 jun, 4:00 PM</strong> (hora VE) · cierra {timeUntil(PREDICTIONS_DEADLINE_ISO, now)}</>
+                  ) : (
+                    <>🔒 Predicciones cerradas — cerraron el 10 de junio a las 4:00 PM</>
+                  )}
+                </div>
+
                 <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/35 backdrop-blur-xl p-1 text-sm">
                   <FilterTab poolId={id} active={filter} value="all" label="Todos" count={stageCounts.all} />
                   {stagesPresent.map(st => (
@@ -480,10 +489,10 @@ export default async function PoolDetailPage({
               <h2 className="text-xl uppercase tracking-tight">Reglas</h2>
 
               <div className="space-y-3">
-                <RuleCard icon="⏰" title="Predicciones">
-                  Debes llenar el marcador de cada partido{" "}
-                  <strong className="text-slate-100">hasta 1 hora antes</strong> de que empiece.
-                  Al cerrar ese plazo el partido se bloquea y ya no puedes modificar tu predicción.
+                <RuleCard icon="⏰" title="Cierre de predicciones">
+                  Debes completar TODA la quiniela{" "}
+                  <strong className="text-slate-100">antes del martes 10 de junio de 2026, 4:00 PM (hora de Venezuela)</strong>.
+                  Pasada esa hora se bloquea todo y ya no puedes modificar ninguna predicción.
                 </RuleCard>
                 <RuleCard icon="📋" title="Llena toda la quiniela">
                   Debes completar tus predicciones de{" "}

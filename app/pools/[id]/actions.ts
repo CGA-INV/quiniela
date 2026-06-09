@@ -80,7 +80,7 @@ export async function saveAllPredictions(formData: FormData) {
   if (rows.length === 0) {
     if (lockedOut > 0) {
       redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(
-        `Ya cerró el plazo (1 hora antes del kickoff). No se guardó nada.`,
+        `Ya cerró el plazo de predicciones (10 jun, 4:00 PM). No se guardó nada.`,
       )}`);
     }
     redirect(`/pools/${poolId}?tab=partidos&error=No%20hay%20predicciones%20v%C3%A1lidas%20para%20guardar`);

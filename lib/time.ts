@@ -1,18 +1,22 @@
-// Cuánto tiempo antes del kickoff se cierran las predicciones.
-// IMPORTANTE: este valor también está hardcodeado en
-// supabase/migration_prediction_lock.sql. Mantenelos en sync.
-export const PREDICTION_LOCK_MINUTES = 60;
-
-export function lockAtMs(kickoffIso: string): number {
-  return new Date(kickoffIso).getTime() - PREDICTION_LOCK_MINUTES * 60 * 1000;
-}
-
-export function isPredictionOpen(kickoffIso: string, now = Date.now()): boolean {
-  return now < lockAtMs(kickoffIso);
-}
+// Cierre ÚNICO de predicciones para toda la quiniela:
+// martes 10 de junio de 2026, 4:00 PM hora de Venezuela (UTC-4) = 20:00 UTC.
+// IMPORTANTE: este mismo instante está hardcodeado en la RLS
+// (supabase/migration_prediction_deadline.sql). Manténlos en sync.
+export const PREDICTIONS_DEADLINE_ISO = "2026-06-10T20:00:00Z";
+const DEADLINE_MS = new Date(PREDICTIONS_DEADLINE_ISO).getTime();
 
 // Zona horaria de Venezuela (UTC-4, sin horario de verano).
 export const TZ_VENEZUELA = "America/Caracas";
+
+/** Instante en que cierran las predicciones (siempre el cierre global). */
+export function lockAtMs(_kickoffIso?: string): number {
+  return DEADLINE_MS;
+}
+
+/** Las predicciones están abiertas hasta el cierre global, sin importar el partido. */
+export function isPredictionOpen(_kickoffIso?: string, now = Date.now()): boolean {
+  return now < DEADLINE_MS;
+}
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleString("es-VE", {
