@@ -35,6 +35,17 @@ const STAGE_ORDER = [
   "quarter", "semi", "third_place", "final",
 ];
 
+// Etiquetas cortas para las pestañas de fase
+const STAGE_SHORT: Record<string, string> = {
+  group: "Grupos",
+  round_of_32: "32avos",
+  round_of_16: "Octavos",
+  quarter: "Cuartos",
+  semi: "Semis",
+  third_place: "3er puesto",
+  final: "Final",
+};
+
 type Match = {
   id: string;
   stage: keyof typeof STAGE_LABEL;
@@ -66,7 +77,7 @@ type Payment = {
   validated_at: string | null;
 };
 
-type Filter = "all" | "open" | "live" | "done";
+type Filter = "all" | keyof typeof STAGE_LABEL;
 
 export default async function PoolDetailPage({
   params,
@@ -77,7 +88,7 @@ export default async function PoolDetailPage({
 }) {
   const { id } = await params;
   const { error, ok, f, tab } = await searchParams;
-  const filter: Filter = (f === "open" || f === "live" || f === "done") ? f : "all";
+  const filter: Filter = f && f in STAGE_LABEL ? (f as keyof typeof STAGE_LABEL) : "all";
   const activeTab: PoolTab = (tab === "partidos" || tab === "ranking" || tab === "pagos" || tab === "reglas") ? tab : "inicio";
 
   const [supabase, user] = await Promise.all([createClient(), getCachedUser()]);
@@ -183,26 +194,15 @@ export default async function PoolDetailPage({
     liveMatches.map(m => m.group_label).filter((g): g is string => !!g),
   );
 
-  // Counts y filtros de partidos
-  const counts = matchList.reduce(
-    (acc, m) => {
-      const open = isPredictionOpen(m.kickoff_at, now);
-      if (open) acc.open++;
-      else if (!m.finished) acc.live++;
-      else acc.done++;
-      acc.all++;
-      return acc;
-    },
-    { all: 0, open: 0, live: 0, done: 0 },
-  );
+  // Partidos por predecir (abiertos) para el KPI
+  const openCount = matchList.filter(m => isPredictionOpen(m.kickoff_at, now)).length;
 
-  const filteredMatches = matchList.filter(m => {
-    const open = isPredictionOpen(m.kickoff_at, now);
-    if (filter === "open") return open;
-    if (filter === "live") return !open && !m.finished;
-    if (filter === "done") return m.finished;
-    return true;
-  });
+  // Conteo por fase y filtro por fase
+  const stageCounts: Record<string, number> = { all: matchList.length };
+  for (const m of matchList) stageCounts[m.stage] = (stageCounts[m.stage] ?? 0) + 1;
+  const stagesPresent = STAGE_ORDER.filter(st => (stageCounts[st] ?? 0) > 0);
+
+  const filteredMatches = filter === "all" ? matchList : matchList.filter(m => m.stage === filter);
 
   // Próximo partido para predecir
   const nextOpen = matchList.find(m => isPredictionOpen(m.kickoff_at, now));
@@ -360,9 +360,9 @@ export default async function PoolDetailPage({
                 />
                 <Stat
                   label="Por predecir"
-                  value={counts.open}
-                  sub={counts.open > 0 ? "no te quedes" : "al día"}
-                  accent={counts.open > 0 ? "amber" : "slate"}
+                  value={openCount}
+                  sub={openCount > 0 ? "no te quedes" : "al día"}
+                  accent={openCount > 0 ? "amber" : "slate"}
                 />
               </div>
               <Stat
@@ -420,10 +420,10 @@ export default async function PoolDetailPage({
                 </div>
 
                 <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/35 backdrop-blur-xl p-1 text-sm">
-                  <FilterTab poolId={id} active={filter} value="all" label="Todos" count={counts.all} />
-                  <FilterTab poolId={id} active={filter} value="open" label="Abiertos" count={counts.open} />
-                  <FilterTab poolId={id} active={filter} value="live" label="En juego" count={counts.live} />
-                  <FilterTab poolId={id} active={filter} value="done" label="Finalizados" count={counts.done} />
+                  <FilterTab poolId={id} active={filter} value="all" label="Todos" count={stageCounts.all} />
+                  {stagesPresent.map(st => (
+                    <FilterTab key={st} poolId={id} active={filter} value={st} label={STAGE_SHORT[st] ?? st} count={stageCounts[st] ?? 0} />
+                  ))}
                 </div>
 
                 <form action={saveAllPredictions}>
@@ -1076,15 +1076,15 @@ function FilterTab({
   count,
 }: {
   poolId: string;
-  active: Filter;
-  value: Filter;
+  active: string;
+  value: string;
   label: string;
   count: number;
 }) {
   const isActive = active === value;
   return (
     <Link
-      href={`/pools/${poolId}${value === "all" ? "" : `?f=${value}`}`}
+      href={`/pools/${poolId}?tab=partidos${value === "all" ? "" : `&f=${value}`}`}
       className={[
         "flex-1 min-w-[6rem] rounded-xl px-3 py-1.5 text-center transition",
         isActive
