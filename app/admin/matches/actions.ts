@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSuper, requireAnyAdmin } from "@/lib/admin-context";
 import { logActivity } from "@/lib/activity";
+import { propagateBracket } from "@/lib/bracket-apply";
 
 const STAGES = [
   "group", "round_of_32", "round_of_16",
@@ -144,6 +145,8 @@ export async function setMatchResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const homeScore = Number(formData.get("home_score") ?? -1);
   const awayScore = Number(formData.get("away_score") ?? -1);
+  // Quién avanzó por penales (solo eliminatorias empatadas). "" = sin definir.
+  const penWinner = nullable(String(formData.get("pen_winner") ?? ""));
 
   if (!id || !Number.isInteger(homeScore) || !Number.isInteger(awayScore)
       || homeScore < 0 || awayScore < 0) {
@@ -155,7 +158,7 @@ export async function setMatchResult(formData: FormData) {
 
   const { data: cur } = await supabase
     .from("matches")
-    .select("finished, home_team, away_team")
+    .select("finished, home_team, away_team, stage")
     .eq("id", id)
     .single();
 
@@ -166,12 +169,22 @@ export async function setMatchResult(formData: FormData) {
     );
   }
 
+  // En eliminatorias empatadas necesitamos saber quién pasó para avanzar la llave.
+  const isKnockout = cur?.stage && cur.stage !== "group";
+  const penToStore =
+    isKnockout && homeScore === awayScore
+      ? penWinner && (penWinner === cur?.home_team || penWinner === cur?.away_team)
+        ? penWinner
+        : null
+      : null;
+
   const { error } = await supabase
     .from("matches")
     .update({
       home_score: homeScore,
       away_score: awayScore,
       finished: true,
+      pen_winner: penToStore,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
@@ -187,8 +200,38 @@ export async function setMatchResult(formData: FormData) {
     was_already_closed: cur?.finished ?? false,
   });
 
+  // Llena las llaves eliminatorias que ya quedaron determinadas (no pisa nada
+  // ya puesto a mano). Tolerante a fallos: nunca bloquea el cierre del partido.
+  let advanced = 0;
+  try {
+    advanced = await propagateBracket(supabase);
+  } catch {
+    // Si algo falla, el resultado igual quedó guardado; admin puede usar
+    // "Actualizar llaves" manualmente.
+  }
+
   revalidatePath("/admin/matches");
-  redirect("/admin/matches?ok=Resultado%20guardado");
+  const msg = advanced > 0
+    ? `Resultado guardado · ${advanced} ${advanced === 1 ? "llave actualizada" : "llaves actualizadas"}`
+    : "Resultado guardado";
+  redirect(`/admin/matches?ok=${encodeURIComponent(msg)}`);
+}
+
+/** Recalcula y SOBRESCRIBE todas las llaves eliminatorias no cerradas a partir
+ *  de los resultados actuales (escape hatch tras corregir un resultado). */
+export async function recomputeBracket() {
+  const { supabase } = await requireSuper();
+  let n = 0;
+  try {
+    n = await propagateBracket(supabase, { force: true });
+  } catch (e) {
+    const m = e instanceof Error ? e.message : "error";
+    redirect(`/admin/matches?error=${encodeURIComponent("No se pudo recalcular: " + m)}`);
+  }
+  revalidatePath("/admin/matches");
+  redirect(`/admin/matches?ok=${encodeURIComponent(
+    n > 0 ? `Llaves recalculadas · ${n} actualizadas` : "Llaves al día (nada que cambiar)",
+  )}`);
 }
 
 export async function reopenMatch(formData: FormData) {

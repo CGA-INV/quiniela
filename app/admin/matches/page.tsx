@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin-context";
 import { fmtDate, timeUntil } from "@/lib/time";
 import { Flag } from "@/components/Flag";
-import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches, updateMatchTeams } from "./actions";
+import { createMatch, setMatchResult, updateMatchScore, reopenMatch, deleteMatch, importMatches, updateMatchTeams, recomputeBracket } from "./actions";
 import { AdminNav } from "@/components/AdminNav";
 import { ScreenBackground } from "@/components/ScreenBackground";
 
@@ -55,6 +55,7 @@ type Match = {
   city: string | null;
   match_no: number | null;
   pool_id: string | null;
+  pen_winner: string | null;
 };
 
 type SandboxPool = { id: string; name: string };
@@ -99,7 +100,7 @@ export default async function AdminMatchesPage({
   const [{ data: matches }, { data: preds }, { data: sandboxPools }] = await Promise.all([
     supabase
       .from("matches")
-      .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no, pool_id")
+      .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no, pool_id, pen_winner")
       .order("kickoff_at", { ascending: true }),
     supabase
       .from("predictions")
@@ -337,11 +338,29 @@ export default async function AdminMatchesPage({
         )}
 
         <section className="mt-6">
-          <div className="mb-3">
+          <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-xl font-semibold">
               Calendario <span className="text-slate-500 text-base">({matchList.length})</span>
             </h2>
+            {isSuper && (
+              <form action={recomputeBracket}>
+                <button
+                  className="rounded-md border border-blue-500/40 px-3 py-1.5 text-xs font-medium text-blue-300 transition hover:bg-blue-500/10"
+                  title="Recalcula los equipos de TODAS las llaves eliminatorias (no cerradas) según los resultados actuales. Sobrescribe correcciones manuales."
+                >
+                  ↻ Actualizar llaves
+                </button>
+              </form>
+            )}
           </div>
+          {isSuper && (
+            <p className="mb-4 text-xs text-slate-500">
+              Las llaves eliminatorias (32avos → final) se llenan solas al cerrar
+              los partidos: clasificados de grupos y ganadores que avanzan. Puedes
+              corregir cualquier equipo a mano con el selector. Los <strong>terceros</strong>{" "}
+              se asignan automático — conviene verificarlos contra el bracket oficial.
+            </p>
+          )}
 
           {/* Filtros: status y scope */}
           <div className="mb-4 flex flex-col gap-2">
@@ -505,6 +524,23 @@ export default async function AdminMatchesPage({
                               className="mt-0.5 block w-16 rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-500 focus:outline-none"
                             />
                           </label>
+                          {m.stage !== "group"
+                            && !/por definir/i.test(m.home_team)
+                            && !/por definir/i.test(m.away_team) && (
+                            <label className="text-xs text-slate-400">
+                              Si empatan, pasa
+                              <select
+                                name="pen_winner"
+                                defaultValue={m.pen_winner ?? ""}
+                                className="mt-0.5 block rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+                                title="Solo para eliminatorias que terminan empatadas (penales)."
+                              >
+                                <option value="">— penales —</option>
+                                <option value={m.home_team}>{m.home_team}</option>
+                                <option value={m.away_team}>{m.away_team}</option>
+                              </select>
+                            </label>
+                          )}
                           <button
                             type="submit"
                             formAction={updateMatchScore}
