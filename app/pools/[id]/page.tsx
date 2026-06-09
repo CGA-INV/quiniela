@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDate, timeUntil, isPredictionOpen, lockAtMs, PREDICTIONS_DEADLINE_ISO } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
+import { computeBracketTeams, isPlaceholderTeam } from "@/lib/bracket";
 import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
@@ -144,6 +145,51 @@ export default async function PoolDetailPage({
   const predMap = new Map<string, Prediction>(
     ((ownPreds ?? []) as Prediction[]).map(p => [p.match_id, p]),
   );
+
+  // Bracket de PREDICCIÓN del jugador: a partir de SUS predicciones de grupos
+  // (y de cada fase eliminatoria), calcula qué equipos —según él— jugarían cada
+  // llave, para mostrarlos en vez de "por definir" y poder llenar hasta la final.
+  // Es solo ayuda visual: los puntos siguen siendo por marcador de cada partido.
+  const predTeams = (() => {
+    const sim = matchList.map(m => {
+      const p = predMap.get(m.id);
+      const isGroup = m.stage === "group";
+      return {
+        match_no: m.match_no,
+        id: m.id,
+        stage: m.stage,
+        group_label: m.group_label,
+        home_team: isGroup ? m.home_team : "Local por definir",
+        away_team: isGroup ? m.away_team : "Visitante por definir",
+        home_score: p ? p.pred_home : null,
+        away_score: p ? p.pred_away : null,
+        finished: false,
+        pen_winner: null as string | null,
+      };
+    });
+    for (let iter = 0; iter < 12; iter++) {
+      const desired = computeBracketTeams(sim);
+      let changed = false;
+      for (const sm of sim) {
+        if (sm.match_no == null || sm.stage === "group") continue;
+        const w = desired.get(sm.match_no);
+        if (w?.home && isPlaceholderTeam(sm.home_team)) { sm.home_team = w.home; changed = true; }
+        if (w?.away && isPlaceholderTeam(sm.away_team)) { sm.away_team = w.away; changed = true; }
+        // En empate de eliminatoria, para no bloquear el bracket, avanza el local.
+        if (sm.home_score != null && sm.home_score === sm.away_score && !sm.pen_winner
+            && !isPlaceholderTeam(sm.home_team)) {
+          sm.pen_winner = sm.home_team; changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    const map = new Map<string, { home: string; away: string }>();
+    for (const sm of sim) {
+      if (sm.stage === "group") continue;
+      map.set(sm.id, { home: sm.home_team, away: sm.away_team });
+    }
+    return map;
+  })();
 
   // RPC ya devuelve rows ordenados con stats + is_admin
   type RankingRow = {
@@ -428,6 +474,15 @@ export default async function PoolDetailPage({
                   )}
                 </div>
 
+                {predOpen && (
+                  <div className="mb-3 rounded-xl border border-slate-800 bg-slate-900/35 px-4 py-2.5 text-xs text-slate-400">
+                    💡 Llena los <strong className="text-slate-200">grupos</strong> y guarda: los{" "}
+                    <strong className="text-slate-200">32avos</strong> se rellenan solos con los equipos
+                    que —según tu pronóstico— clasificarían, y así fase por fase hasta la final.
+                    (En empate de eliminatoria avanza el equipo de la izquierda.)
+                  </div>
+                )}
+
                 <div className="mb-4 flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/35 backdrop-blur-xl p-1 text-sm">
                   <FilterTab poolId={id} active={filter} value="all" label="Todos" count={stageCounts.all} />
                   {stagesPresent.map(st => (
@@ -465,6 +520,7 @@ export default async function PoolDetailPage({
                     <ByStageGrid
                       matches={filteredMatches}
                       predMap={predMap}
+                      predTeams={predTeams}
                       poolId={id}
                       now={now}
                     />
@@ -1038,11 +1094,13 @@ function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; h
 function ByStageGrid({
   matches,
   predMap,
+  predTeams,
   poolId,
   now,
 }: {
   matches: Match[];
   predMap: Map<string, Prediction>;
+  predTeams: Map<string, { home: string; away: string }>;
   poolId: string;
   now: number;
 }) {
@@ -1066,6 +1124,7 @@ function ByStageGrid({
                 key={m.id}
                 match={m}
                 pred={predMap.get(m.id)}
+                predTeam={predTeams.get(m.id)}
                 poolId={poolId}
                 now={now}
               />
@@ -1112,14 +1171,24 @@ function FilterTab({
 function MatchCard({
   match: m,
   pred,
+  predTeam,
   now,
   poolId,
 }: {
   match: Match;
   pred?: Prediction;
+  predTeam?: { home: string; away: string };
   now: number;
   poolId: string;
 }) {
+  // Si el partido aún no tiene equipo real (eliminatorias antes del torneo),
+  // mostramos el equipo que el jugador predijo que jugaría esta llave.
+  const homeName = !isPlaceholderTeam(m.home_team)
+    ? m.home_team
+    : predTeam && !isPlaceholderTeam(predTeam.home) ? predTeam.home : m.home_team;
+  const awayName = !isPlaceholderTeam(m.away_team)
+    ? m.away_team
+    : predTeam && !isPlaceholderTeam(predTeam.away) ? predTeam.away : m.away_team;
   const open = isPredictionOpen(m.kickoff_at, now);
   const lockMs = lockAtMs(m.kickoff_at);
   const lockIso = new Date(lockMs).toISOString();
@@ -1187,8 +1256,8 @@ function MatchCard({
       <div className={live ? "mt-4" : "mt-3"}>
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center justify-end gap-2 font-medium text-right flex-1 min-w-0">
-            <span className="truncate">{m.home_team}</span>
-            <Flag team={m.home_team} size={live ? 24 : 20} />
+            <span className="truncate">{homeName}</span>
+            <Flag team={homeName} size={live ? 24 : 20} />
           </span>
 
           {open ? (
@@ -1210,8 +1279,8 @@ function MatchCard({
           )}
 
           <span className="flex items-center justify-start gap-2 font-medium text-left flex-1 min-w-0">
-            <Flag team={m.away_team} size={live ? 24 : 20} />
-            <span className="truncate">{m.away_team}</span>
+            <Flag team={awayName} size={live ? 24 : 20} />
+            <span className="truncate">{awayName}</span>
           </span>
         </div>
       </div>

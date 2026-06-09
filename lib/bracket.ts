@@ -89,10 +89,12 @@ const KO: Record<number, { home: Link; away: Link }> = {
   104: { home: { winnerOf: 101 }, away: { winnerOf: 102 } },
 };
 
-/** Ganador/perdedor de un partido eliminatorio ya cerrado y decidido. */
+/** Ganador/perdedor de un partido eliminatorio con resultado decidido.
+ *  Basta con que tenga marcador cargado (con "Actualizar" o "Cerrar"); no exige
+ *  finished, para que la llave avance apenas pongas el resultado. */
 function decideKO(m: BracketMatch | undefined): { winner: string | null; loser: string | null } {
   const none = { winner: null, loser: null };
-  if (!m || !m.finished) return none;
+  if (!m) return none;
   if (isPlaceholderTeam(m.home_team) || isPlaceholderTeam(m.away_team)) return none;
   if (m.home_score == null || m.away_score == null) return none;
   if (m.home_score > m.away_score) return { winner: m.home_team, loser: m.away_team };
@@ -156,16 +158,20 @@ export function computeBracketTeams(
 
   const standings = buildStandings(matches);
 
-  // Completitud de cada grupo (todos sus partidos cerrados).
+  // Completitud de cada grupo: todos sus partidos tienen marcador cargado
+  // (sirve igual para resultados reales del admin que para las predicciones
+  // de un jugador, donde el "marcador" es su pronóstico).
   const total = new Map<string, number>();
-  const done = new Map<string, number>();
+  const scored = new Map<string, number>();
   for (const m of matches) {
     if (m.stage !== "group" || !m.group_label) continue;
     total.set(m.group_label, (total.get(m.group_label) ?? 0) + 1);
-    if (m.finished) done.set(m.group_label, (done.get(m.group_label) ?? 0) + 1);
+    if (m.home_score != null && m.away_score != null) {
+      scored.set(m.group_label, (scored.get(m.group_label) ?? 0) + 1);
+    }
   }
   const groups = Array.from(total.keys());
-  const groupComplete = (g: string) => (total.get(g) ?? 0) > 0 && total.get(g) === (done.get(g) ?? 0);
+  const groupComplete = (g: string) => (total.get(g) ?? 0) > 0 && total.get(g) === (scored.get(g) ?? 0);
   const pos = (g: string, idx: number): string | null => {
     if (!groupComplete(g)) return null;
     const row = standings.get(g);

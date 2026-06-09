@@ -137,6 +137,10 @@ export async function updateMatchScore(formData: FormData) {
     away_score: awayScore,
   });
 
+  // El marcador (aunque no cierre el partido) ya alcanza para llenar las llaves
+  // determinadas. Tolerante a fallos.
+  try { await propagateBracket(supabase); } catch { /* no bloquea el guardado */ }
+
   revalidatePath("/admin/matches");
   redirect(`/admin/matches?ok=Marcador%20actualizado:%20${homeScore}-${awayScore}`);
 }
