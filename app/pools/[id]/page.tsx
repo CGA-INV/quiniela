@@ -485,6 +485,12 @@ export default async function PoolDetailPage({
                   <strong className="text-slate-100">hasta 1 hora antes</strong> de que empiece.
                   Al cerrar ese plazo el partido se bloquea y ya no puedes modificar tu predicción.
                 </RuleCard>
+                <RuleCard icon="📋" title="Llena toda la quiniela">
+                  Debes completar tus predicciones de{" "}
+                  <strong className="text-slate-100">todas las fases hasta la final</strong>{" "}
+                  (grupos, 32avos, octavos, cuartos, semis y final). Las eliminatorias se van
+                  habilitando conforme avanza el torneo.
+                </RuleCard>
                 <RuleCard icon="🎯" title="Puntos">
                   <strong className="text-[#c6ff3d]">5 pts</strong> marcador exacto ·{" "}
                   <strong className="text-[#c6ff3d]">3 pts</strong> acertar al ganador ·{" "}
@@ -498,6 +504,12 @@ export default async function PoolDetailPage({
                     jugador{ranking.length === 1 ? "" : "es"} →{" "}
                     <strong className="text-[#c6ff3d]">{prizeCount} premios</strong>.
                   </span>
+                </RuleCard>
+                <RuleCard icon="✅" title="Confirma tu participación">
+                  Para participar debes{" "}
+                  <strong className="text-slate-100">unirte al grupo de WhatsApp</strong> y{" "}
+                  <strong className="text-slate-100">realizar el pago</strong>. Sin el pago
+                  confirmado, tu participación no es válida.
                 </RuleCard>
                 <RuleCard icon="💵" title="Cómo se paga al ganador">
                   Cuando termina la fase de grupos, el sistema marca al ganador. En la pestaña{" "}
