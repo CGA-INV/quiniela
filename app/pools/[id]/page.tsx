@@ -431,7 +431,7 @@ export default async function PoolDetailPage({
 
                 <div className={`mb-3 rounded-xl border px-4 py-2.5 text-sm ${predOpen ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
                   {groupOpen ? (
-                    <>⏰ <strong>Grupos</strong> cierran 10 jun, 4:00 PM (hora VE) · cierra {timeUntil(PREDICTIONS_DEADLINE_ISO, now)}. Cada fase eliminatoria cierra cuando arranca.</>
+                    <>⏰ <strong>Grupos</strong> cierran 10 jun, 11:59 PM (hora VE) · cierra {timeUntil(PREDICTIONS_DEADLINE_ISO, now)}. Cada fase eliminatoria cierra cuando arranca.</>
                   ) : predOpen ? (
                     <>⏰ Grupos cerrados. Cada fase eliminatoria cierra cuando arranca — aún puedes llenar y editar las fases que no han comenzado.</>
                   ) : (
@@ -513,7 +513,7 @@ export default async function PoolDetailPage({
               <div className="space-y-3">
                 <RuleCard icon="⏰" title="Cierre por fase">
                   La <strong className="text-slate-100">fase de grupos</strong> cierra el{" "}
-                  <strong className="text-slate-100">martes 10 de junio de 2026, 4:00 PM (hora de Venezuela)</strong>.
+                  <strong className="text-slate-100">martes 10 de junio de 2026, 11:59 PM (hora de Venezuela)</strong>.
                   Cada <strong className="text-slate-100">fase eliminatoria</strong> (32avos, octavos, cuartos,
                   semis, 3er puesto y final) cierra cuando <strong className="text-slate-100">arranca esa fase</strong>:
                   hasta entonces puedes llenarla, corregirla o borrar predicciones para dejarlas sin definir.

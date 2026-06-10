@@ -2,7 +2,7 @@
 -- Cierre de predicciones POR FASE (reemplaza el cierre único global).
 --
 --   - Fase de grupos: cierre fijo el martes 10 de junio de 2026,
---     4:00 PM hora de Venezuela (UTC-4) = 2026-06-10 20:00:00+00 (UTC).
+--     11:59 PM hora de Venezuela (UTC-4) = 2026-06-11 03:59:00+00 (UTC).
 --   - Cada fase eliminatoria (round_of_32, round_of_16, quarter, semi,
 --     third_place, final): cierra cuando ARRANCA la fase = kickoff del
 --     primer partido de esa fase. Hasta entonces se puede insertar,
@@ -11,7 +11,7 @@
 -- Además: se habilita el BORRADO de predicciones propias mientras la fase
 -- siga abierta (deja la predicción "sin definir").
 --
--- IMPORTANTE: el cierre de grupos (2026-06-10 20:00:00+00) también vive en
+-- IMPORTANTE: el cierre de grupos (2026-06-11 03:59:00+00) también vive en
 -- lib/time.ts (PREDICTIONS_DEADLINE_ISO). Manténlos en sync.
 -- Pegar en Supabase SQL Editor -> Run. Idempotente.
 -- =====================================================================
@@ -28,13 +28,13 @@ set search_path = public
 as $$
   select case
     when m.stage = 'group'
-      then now() < timestamptz '2026-06-10 20:00:00+00'
+      then now() < timestamptz '2026-06-11 03:59:00+00'
     else now() < coalesce((
       select min(m2.kickoff_at)
       from public.matches m2
       where m2.stage = m.stage
         and m2.pool_id is not distinct from m.pool_id
-    ), timestamptz '2026-06-10 20:00:00+00')
+    ), timestamptz '2026-06-11 03:59:00+00')
   end
   from public.matches m
   where m.id = p_match_id;

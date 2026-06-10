@@ -1,11 +1,11 @@
 // Cierre de predicciones POR FASE:
-//   - Fase de grupos: cierre fijo el martes 10 de junio de 2026, 4:00 PM
-//     hora de Venezuela (UTC-4) = 20:00 UTC.
+//   - Fase de grupos: cierre fijo el martes 10 de junio de 2026, 11:59 PM
+//     hora de Venezuela (UTC-4) = 2026-06-11 03:59 UTC.
 //   - Cada fase eliminatoria: cierra cuando ARRANCA esa fase, es decir el
 //     kickoff del primer partido de la fase. Hasta entonces se puede llenar.
 // IMPORTANTE: el cierre de grupos también vive en la RLS
 // (supabase/migration_prediction_deadline_per_phase.sql). Manténlos en sync.
-export const PREDICTIONS_DEADLINE_ISO = "2026-06-10T20:00:00Z";
+export const PREDICTIONS_DEADLINE_ISO = "2026-06-11T03:59:00Z";
 const DEADLINE_MS = new Date(PREDICTIONS_DEADLINE_ISO).getTime();
 
 export const GROUP_STAGE = "group";
