@@ -1,21 +1,47 @@
-// Cierre ÚNICO de predicciones para toda la quiniela:
-// martes 10 de junio de 2026, 4:00 PM hora de Venezuela (UTC-4) = 20:00 UTC.
-// IMPORTANTE: este mismo instante está hardcodeado en la RLS
-// (supabase/migration_prediction_deadline.sql). Manténlos en sync.
+// Cierre de predicciones POR FASE:
+//   - Fase de grupos: cierre fijo el martes 10 de junio de 2026, 4:00 PM
+//     hora de Venezuela (UTC-4) = 20:00 UTC.
+//   - Cada fase eliminatoria: cierra cuando ARRANCA esa fase, es decir el
+//     kickoff del primer partido de la fase. Hasta entonces se puede llenar.
+// IMPORTANTE: el cierre de grupos también vive en la RLS
+// (supabase/migration_prediction_deadline_per_phase.sql). Manténlos en sync.
 export const PREDICTIONS_DEADLINE_ISO = "2026-06-10T20:00:00Z";
 const DEADLINE_MS = new Date(PREDICTIONS_DEADLINE_ISO).getTime();
+
+export const GROUP_STAGE = "group";
 
 // Zona horaria de Venezuela (UTC-4, sin horario de verano).
 export const TZ_VENEZUELA = "America/Caracas";
 
-/** Instante en que cierran las predicciones (siempre el cierre global). */
-export function lockAtMs(_kickoffIso?: string): number {
-  return DEADLINE_MS;
+export type StageMatch = { stage: string; kickoff_at: string };
+
+/**
+ * A partir de TODOS los partidos, calcula el instante de cierre de cada fase
+ * eliminatoria = kickoff del primer partido de esa fase. La fase de grupos NO
+ * entra al mapa (su cierre es fijo, ver `stageLockMs`). Las fases sin partidos
+ * cargados tampoco aparecen y caen al cierre global.
+ */
+export function buildStageLocks(matches: StageMatch[]): Map<string, number> {
+  const locks = new Map<string, number>();
+  for (const m of matches) {
+    if (m.stage === GROUP_STAGE) continue;
+    const t = new Date(m.kickoff_at).getTime();
+    if (!Number.isFinite(t)) continue;
+    const cur = locks.get(m.stage);
+    if (cur === undefined || t < cur) locks.set(m.stage, t);
+  }
+  return locks;
 }
 
-/** Las predicciones están abiertas hasta el cierre global, sin importar el partido. */
-export function isPredictionOpen(_kickoffIso?: string, now = Date.now()): boolean {
-  return now < DEADLINE_MS;
+/** Instante (ms) en que cierran las predicciones de una fase. */
+export function stageLockMs(stage: string, locks: Map<string, number>): number {
+  if (stage === GROUP_STAGE) return DEADLINE_MS;
+  return locks.get(stage) ?? DEADLINE_MS;
+}
+
+/** ¿Sigue abierta esta fase para predecir/editar/borrar? */
+export function isStageOpen(stage: string, locks: Map<string, number>, now = Date.now()): boolean {
+  return now < stageLockMs(stage, locks);
 }
 
 export function fmtDate(iso: string): string {

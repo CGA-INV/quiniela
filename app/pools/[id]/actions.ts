@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isPredictionOpen } from "@/lib/time";
+import { buildStageLocks, isStageOpen, type StageMatch } from "@/lib/time";
 
 export async function saveAllPredictions(formData: FormData) {
   const poolId = String(formData.get("pool_id") ?? "");
@@ -27,16 +27,23 @@ export async function saveAllPredictions(formData: FormData) {
     redirect(`/pools/${poolId}?tab=partidos&error=No%20hay%20datos%20para%20guardar`);
   }
 
-  // Pre-filtramos los partidos cuyo plazo ya cerró (race entre carga y submit).
-  const { data: matchTimes } = await supabase
-    .from("matches")
-    .select("id, kickoff_at")
-    .in("id", matchIds);
+  // El cierre es por FASE: grupos = fecha fija; cada eliminatoria = kickoff del
+  // primer partido de la fase. Necesitamos TODOS los partidos del set para
+  // ubicar ese primer kickoff. Pool real = globales (pool_id null); sandbox = propios.
+  const { data: poolRow } = await supabase
+    .from("pools").select("is_sandbox").eq("id", poolId).maybeSingle();
+  const isSandbox = !!(poolRow as { is_sandbox?: boolean } | null)?.is_sandbox;
 
-  const openMatchIds = new Set<string>();
-  for (const m of (matchTimes ?? []) as { id: string; kickoff_at: string }[]) {
-    if (isPredictionOpen(m.kickoff_at)) openMatchIds.add(m.id);
+  const { data: allMatches } = await (isSandbox
+    ? supabase.from("matches").select("id, stage, kickoff_at").eq("pool_id", poolId)
+    : supabase.from("matches").select("id, stage, kickoff_at").is("pool_id", null));
+
+  const stageById = new Map<string, string>();
+  for (const m of (allMatches ?? []) as { id: string; stage: string; kickoff_at: string }[]) {
+    stageById.set(m.id, m.stage);
   }
+  const stageLocks = buildStageLocks((allMatches ?? []) as StageMatch[]);
+  const now = Date.now();
 
   const nowIso = new Date().toISOString();
   type PredRow = {
@@ -48,15 +55,25 @@ export async function saveAllPredictions(formData: FormData) {
     updated_at: string;
   };
   const rows: PredRow[] = [];
+  const toDelete: string[] = [];
   let invalid = 0;
   let lockedOut = 0;
 
   for (const [matchId, hRaw] of homes) {
     const aRaw = aways.get(matchId) ?? "";
-    if (hRaw.trim() === "" && aRaw.trim() === "") continue;
+    const bothEmpty = hRaw.trim() === "" && aRaw.trim() === "";
 
-    if (!openMatchIds.has(matchId)) {
-      lockedOut++;
+    const stage = stageById.get(matchId);
+    const open = stage !== undefined && isStageOpen(stage, stageLocks, now);
+    if (!open) {
+      // Solo cuenta como "bloqueado" si el usuario intentó poner/cambiar algo.
+      if (!bothEmpty) lockedOut++;
+      continue;
+    }
+
+    // Vaciar ambos campos = borrar la predicción ("sin definir").
+    if (bothEmpty) {
+      toDelete.push(matchId);
       continue;
     }
 
@@ -77,26 +94,45 @@ export async function saveAllPredictions(formData: FormData) {
     });
   }
 
-  if (rows.length === 0) {
+  // Borra las predicciones vaciadas (solo fases abiertas). Borrar filas que no
+  // existían es inofensivo; el count refleja las realmente eliminadas.
+  let deleted = 0;
+  if (toDelete.length > 0) {
+    const { error, count } = await supabase
+      .from("predictions")
+      .delete({ count: "exact" })
+      .eq("user_id", user.id)
+      .eq("pool_id", poolId)
+      .in("match_id", toDelete);
+    if (error) {
+      redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(error.message)}`);
+    }
+    deleted = count ?? 0;
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase
+      .from("predictions")
+      .upsert(rows, { onConflict: "user_id,pool_id,match_id" });
+    if (error) {
+      redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(error.message)}`);
+    }
+  }
+
+  if (rows.length === 0 && deleted === 0) {
     if (lockedOut > 0) {
       redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(
-        `Ya cerró el plazo de predicciones (10 jun, 4:00 PM). No se guardó nada.`,
+        "Esa fase ya cerró. No se guardó nada.",
       )}`);
     }
     redirect(`/pools/${poolId}?tab=partidos&error=No%20hay%20predicciones%20v%C3%A1lidas%20para%20guardar`);
   }
 
-  const { error } = await supabase
-    .from("predictions")
-    .upsert(rows, { onConflict: "user_id,pool_id,match_id" });
-
-  if (error) {
-    redirect(`/pools/${poolId}?tab=partidos&error=${encodeURIComponent(error.message)}`);
-  }
-
   revalidatePath(`/pools/${poolId}`);
-  const parts = [`${rows.length} predicciones guardadas`];
-  if (lockedOut > 0) parts.push(`${lockedOut} ya habían cerrado`);
+  const parts: string[] = [];
+  if (rows.length > 0) parts.push(`${rows.length} predicciones guardadas`);
+  if (deleted > 0) parts.push(`${deleted} ${deleted === 1 ? "borrada" : "borradas"}`);
+  if (lockedOut > 0) parts.push(`${lockedOut} ya cerradas`);
   if (invalid > 0) parts.push(`${invalid} con error`);
   redirect(`/pools/${poolId}?tab=partidos&ok=${encodeURIComponent(parts.join(" · "))}`);
 }

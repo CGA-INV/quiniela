@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDate, timeUntil, isPredictionOpen, lockAtMs, PREDICTIONS_DEADLINE_ISO } from "@/lib/time";
+import { fmtDate, timeUntil, buildStageLocks, stageLockMs, isStageOpen, GROUP_STAGE, PREDICTIONS_DEADLINE_ISO } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
 import { computeBracketTeams, isPlaceholderTeam } from "@/lib/bracket";
 import { computePoolWinner } from "@/lib/winner";
@@ -16,7 +16,7 @@ import { PoolMobileNav, type PoolTab } from "@/components/PoolMobileNav";
 import { PricePoll, TimingPoll, VotePromptModal } from "@/components/PoolPolls";
 import { WinnerCelebration } from "@/components/WinnerCelebration";
 import { ScreenBackground } from "@/components/ScreenBackground";
-import { ScoreStepper } from "@/components/ScoreStepper";
+import { ScorePredictionPair } from "@/components/ScorePredictionPair";
 import { LiveRefresher } from "@/components/LiveRefresher";
 import { ShareButton } from "@/components/ShareButton";
 import { MyRankMovement } from "@/components/MyRankMovement";
@@ -240,9 +240,14 @@ export default async function PoolDetailPage({
     liveMatches.map(m => m.group_label).filter((g): g is string => !!g),
   );
 
-  // Partidos por predecir (abiertos) para el KPI
-  const openCount = matchList.filter(m => isPredictionOpen(m.kickoff_at, now)).length;
-  const predOpen = isPredictionOpen(undefined, now);
+  // Cierre POR FASE: grupos = fecha fija; cada eliminatoria = kickoff del
+  // primer partido de la fase.
+  const stageLocks = buildStageLocks(matchList);
+  const groupOpen = isStageOpen(GROUP_STAGE, stageLocks, now);
+
+  // Partidos por predecir (cuya fase sigue abierta) para el KPI
+  const openCount = matchList.filter(m => isStageOpen(m.stage, stageLocks, now)).length;
+  const predOpen = matchList.some(m => isStageOpen(m.stage, stageLocks, now));
 
   // Conteo por fase y filtro por fase
   const stageCounts: Record<string, number> = { all: matchList.length };
@@ -251,10 +256,10 @@ export default async function PoolDetailPage({
 
   const filteredMatches = filter === "all" ? matchList : matchList.filter(m => m.stage === filter);
 
-  // Próximo partido para predecir
-  const nextOpen = matchList.find(m => isPredictionOpen(m.kickoff_at, now));
+  // Próximo partido para predecir (de una fase aún abierta)
+  const nextOpen = matchList.find(m => isStageOpen(m.stage, stageLocks, now));
   const visibleOpenMatches = filteredMatches.filter(
-    m => isPredictionOpen(m.kickoff_at, now),
+    m => isStageOpen(m.stage, stageLocks, now),
   ).length;
 
   // Encuestas (graceful si las tablas aún no existen)
@@ -415,7 +420,7 @@ export default async function PoolDetailPage({
               <Stat
                 label="Próximo partido"
                 value={nextOpen ? `${nextOpen.home_team} vs ${nextOpen.away_team}` : "—"}
-                sub={nextOpen ? `cierra ${timeUntil(new Date(lockAtMs(nextOpen.kickoff_at)).toISOString(), now)}` : "no hay próximos"}
+                sub={nextOpen ? `cierra ${timeUntil(new Date(stageLockMs(nextOpen.stage, stageLocks)).toISOString(), now)}` : "no hay próximos"}
                 accent="amber"
                 compact
               />
@@ -467,10 +472,12 @@ export default async function PoolDetailPage({
                 </div>
 
                 <div className={`mb-3 rounded-xl border px-4 py-2.5 text-sm ${predOpen ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
-                  {predOpen ? (
-                    <>⏰ Cierre de predicciones: <strong>10 jun, 4:00 PM</strong> (hora VE) · cierra {timeUntil(PREDICTIONS_DEADLINE_ISO, now)}</>
+                  {groupOpen ? (
+                    <>⏰ <strong>Grupos</strong> cierran 10 jun, 4:00 PM (hora VE) · cierra {timeUntil(PREDICTIONS_DEADLINE_ISO, now)}. Cada fase eliminatoria cierra cuando arranca.</>
+                  ) : predOpen ? (
+                    <>⏰ Grupos cerrados. Cada fase eliminatoria cierra cuando arranca — aún puedes llenar y editar las fases que no han comenzado.</>
                   ) : (
-                    <>🔒 Predicciones cerradas — cerraron el 10 de junio a las 4:00 PM</>
+                    <>🔒 Predicciones cerradas — todas las fases ya comenzaron.</>
                   )}
                 </div>
 
@@ -480,6 +487,7 @@ export default async function PoolDetailPage({
                     <strong className="text-slate-200">32avos</strong> se rellenan solos con los equipos
                     que —según tu pronóstico— clasificarían, y así fase por fase hasta la final.
                     (En empate de eliminatoria avanza el equipo de la izquierda.)
+                    Puedes corregir cada fase eliminatoria hasta que arranque, y <strong className="text-slate-200">borrar</strong> cualquier predicción para dejarla sin definir.
                   </div>
                 )}
 
@@ -523,6 +531,7 @@ export default async function PoolDetailPage({
                       predTeams={predTeams}
                       poolId={id}
                       now={now}
+                      stageLocks={stageLocks}
                     />
                   )}
 
@@ -545,16 +554,18 @@ export default async function PoolDetailPage({
               <h2 className="text-xl uppercase tracking-tight">Reglas</h2>
 
               <div className="space-y-3">
-                <RuleCard icon="⏰" title="Cierre de predicciones">
-                  Debes completar TODA la quiniela{" "}
-                  <strong className="text-slate-100">antes del martes 10 de junio de 2026, 4:00 PM (hora de Venezuela)</strong>.
-                  Pasada esa hora se bloquea todo y ya no puedes modificar ninguna predicción.
+                <RuleCard icon="⏰" title="Cierre por fase">
+                  La <strong className="text-slate-100">fase de grupos</strong> cierra el{" "}
+                  <strong className="text-slate-100">martes 10 de junio de 2026, 4:00 PM (hora de Venezuela)</strong>.
+                  Cada <strong className="text-slate-100">fase eliminatoria</strong> (32avos, octavos, cuartos,
+                  semis, 3er puesto y final) cierra cuando <strong className="text-slate-100">arranca esa fase</strong>:
+                  hasta entonces puedes llenarla, corregirla o borrar predicciones para dejarlas sin definir.
                 </RuleCard>
                 <RuleCard icon="📋" title="Llena toda la quiniela">
-                  Debes completar tus predicciones de{" "}
+                  Conviene completar tus predicciones de{" "}
                   <strong className="text-slate-100">todas las fases hasta la final</strong>{" "}
-                  (grupos, 32avos, octavos, cuartos, semis y final). Las eliminatorias se van
-                  habilitando conforme avanza el torneo.
+                  (grupos, 32avos, octavos, cuartos, semis y final). Los grupos cierran el 10 de junio;
+                  las eliminatorias siguen editables hasta que cada una comienza.
                 </RuleCard>
                 <RuleCard icon="🎯" title="Puntos">
                   <strong className="text-[#c6ff3d]">5 pts</strong> marcador exacto ·{" "}
@@ -1097,12 +1108,14 @@ function ByStageGrid({
   predTeams,
   poolId,
   now,
+  stageLocks,
 }: {
   matches: Match[];
   predMap: Map<string, Prediction>;
   predTeams: Map<string, { home: string; away: string }>;
   poolId: string;
   now: number;
+  stageLocks: Map<string, number>;
 }) {
   const byStage = new Map<string, Match[]>();
   for (const m of matches) {
@@ -1127,6 +1140,7 @@ function ByStageGrid({
                 predTeam={predTeams.get(m.id)}
                 poolId={poolId}
                 now={now}
+                stageLocks={stageLocks}
               />
             ))}
           </ul>
@@ -1174,12 +1188,14 @@ function MatchCard({
   predTeam,
   now,
   poolId,
+  stageLocks,
 }: {
   match: Match;
   pred?: Prediction;
   predTeam?: { home: string; away: string };
   now: number;
   poolId: string;
+  stageLocks: Map<string, number>;
 }) {
   // Si el partido aún no tiene equipo real (eliminatorias antes del torneo),
   // mostramos el equipo que el jugador predijo que jugaría esta llave.
@@ -1189,8 +1205,9 @@ function MatchCard({
   const awayName = !isPlaceholderTeam(m.away_team)
     ? m.away_team
     : predTeam && !isPlaceholderTeam(predTeam.away) ? predTeam.away : m.away_team;
-  const open = isPredictionOpen(m.kickoff_at, now);
-  const lockMs = lockAtMs(m.kickoff_at);
+  // Abierto/cierre por FASE: grupos fijo, eliminatorias al arrancar la fase.
+  const open = isStageOpen(m.stage, stageLocks, now);
+  const lockMs = stageLockMs(m.stage, stageLocks);
   const lockIso = new Date(lockMs).toISOString();
   const kickoffMs = new Date(m.kickoff_at).getTime();
   const started = now >= kickoffMs;
@@ -1261,11 +1278,11 @@ function MatchCard({
           </span>
 
           {open ? (
-            <div className="flex shrink-0 items-center gap-2">
-              <ScoreStepper name={`home_${m.id}`} defaultValue={pred?.pred_home ?? null} />
-              <span className="text-slate-500">–</span>
-              <ScoreStepper name={`away_${m.id}`} defaultValue={pred?.pred_away ?? null} />
-            </div>
+            <ScorePredictionPair
+              matchId={m.id}
+              defaultHome={pred?.pred_home ?? null}
+              defaultAway={pred?.pred_away ?? null}
+            />
           ) : (
             <div className={`flex items-center gap-1.5 font-mono tabular-nums shrink-0 ${live ? "text-3xl" : "text-lg"}`}>
               <span className={`${live ? "w-14" : "w-12"} rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-center`}>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateLong, isPredictionOpen } from "@/lib/time";
+import { fmtDateLong, buildStageLocks, isStageOpen, type StageMatch } from "@/lib/time";
 import { Flag } from "@/components/Flag";
 import { getCachedUser } from "@/lib/admin-context";
 import { ScreenBackground } from "@/components/ScreenBackground";
@@ -19,6 +19,7 @@ type Match = {
   venue: string | null;
   city: string | null;
   match_no: number | null;
+  pool_id: string | null;
 };
 
 type RawMember = {
@@ -56,7 +57,7 @@ export default async function MatchDetailPage({
     supabase.from("pools").select("id, name").eq("id", poolId).single(),
     supabase
       .from("matches")
-      .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no")
+      .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, venue, city, match_no, pool_id")
       .eq("id", matchId)
       .single(),
   ]);
@@ -64,9 +65,14 @@ export default async function MatchDetailPage({
   if (!pool || !match) notFound();
   const m = match as Match;
 
-  // Solo se ven las predicciones de otros una vez cerrado el plazo.
-  if (isPredictionOpen(m.kickoff_at)) {
-    redirect(`/pools/${poolId}?error=Las%20predicciones%20se%20ven%20al%20cerrar%20el%20plazo`);
+  // El cierre es por FASE: las predicciones de otros se ven cuando arranca la
+  // fase del partido (kickoff del primer partido de la fase; grupos = 10 jun).
+  const { data: phaseMatches } = await (m.pool_id
+    ? supabase.from("matches").select("stage, kickoff_at").eq("stage", m.stage).eq("pool_id", m.pool_id)
+    : supabase.from("matches").select("stage, kickoff_at").eq("stage", m.stage).is("pool_id", null));
+  const stageLocks = buildStageLocks((phaseMatches ?? []) as StageMatch[]);
+  if (isStageOpen(m.stage, stageLocks)) {
+    redirect(`/pools/${poolId}?error=Las%20predicciones%20se%20ven%20al%20cerrar%20la%20fase`);
   }
 
   const [{ data: members }, { data: predictions }] = await Promise.all([
