@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCachedUser } from "@/lib/admin-context";
 import { isAdminEmail } from "@/lib/auth";
 import { fmtDate } from "@/lib/time";
-import { EvidenceExport } from "@/components/EvidenceExport";
+import { EvidenceView, type DetailRow, type RankRow } from "@/components/EvidenceView";
 
 const STAGE_LABEL: Record<string, string> = {
   group: "Grupos",
@@ -30,20 +30,6 @@ type Match = {
   match_no: number | null;
 };
 type Pred = { user_id: string; match_id: string; pred_home: number; pred_away: number; points: number };
-type RankRow = {
-  user_id: string;
-  display_name: string;
-  total: number;
-  exactos: number;
-  ganador: number;
-  empate: number;
-};
-
-function csvCell(v: string | number | null | undefined): string {
-  const s = v == null ? "" : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-const csvRow = (cells: (string | number | null)[]) => cells.map(csvCell).join(",");
 
 export default async function EvidenciaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -73,7 +59,6 @@ export default async function EvidenciaPage({ params }: { params: Promise<{ id: 
   ]);
 
   const ranking = (rankingData ?? []) as RankRow[];
-  // Solo miembros (o super admin) acceden a la evidencia.
   const isMember = ranking.some(r => r.user_id === user.id);
   if (!isMember && !isSuper) {
     redirect(`/pools/${id}?error=${encodeURIComponent("No eres miembro de esta sala")}`);
@@ -89,56 +74,41 @@ export default async function EvidenciaPage({ params }: { params: Promise<{ id: 
 
   const preds = (predsData ?? []) as Pred[];
   const predBy = new Map<string, Pred>(preds.map(p => [`${p.user_id}|${p.match_id}`, p]));
-  const nameById = new Map<string, string>(ranking.map(r => [r.user_id, r.display_name]));
 
   const fin = (m: Match) => m.finished && m.home_score !== null && m.away_score !== null;
   const finishedCount = matches.filter(fin).length;
 
   // Filas largas (una por predicción visible), agrupadas por partido y orden de ranking.
-  type DetailRow = {
-    matchNo: number | null; stage: string; fecha: string;
-    local: string; visitante: string; marcador: string;
-    jugador: string; pred: string; pts: number | null; predicted: boolean;
-  };
   const detail: DetailRow[] = [];
   for (const m of matches) {
     const marcador = fin(m) ? `${m.home_score}-${m.away_score}` : "sin jugar";
     const base = {
-      matchNo: m.match_no, stage: STAGE_LABEL[m.stage] ?? m.stage,
-      fecha: fmtDate(m.kickoff_at), local: m.home_team, visitante: m.away_team, marcador,
+      matchNo: m.match_no,
+      stageKey: m.stage,
+      stageLabel: STAGE_LABEL[m.stage] ?? m.stage,
+      fecha: fmtDate(m.kickoff_at),
+      local: m.home_team,
+      visitante: m.away_team,
+      marcador,
     };
     const predictors = ranking.filter(r => predBy.has(`${r.user_id}|${m.id}`));
     if (predictors.length === 0) {
-      detail.push({ ...base, jugador: "—", pred: "", pts: null, predicted: false });
+      detail.push({ ...base, userId: null, jugador: "—", pred: "", pts: null, predicted: false });
     } else {
       for (const r of predictors) {
         const p = predBy.get(`${r.user_id}|${m.id}`)!;
-        detail.push({ ...base, jugador: r.display_name, pred: `${p.pred_home}-${p.pred_away}`, pts: p.points, predicted: true });
+        detail.push({ ...base, userId: r.user_id, jugador: r.display_name, pred: `${p.pred_home}-${p.pred_away}`, pts: p.points, predicted: true });
       }
     }
   }
 
-  // CSV completo (RANKING + DETALLE).
-  const lines: string[] = [];
-  lines.push(csvRow([`EVIDENCIA — ${pool.name} (Mundial 2026)`]));
-  lines.push(csvRow([`Código: ${pool.invite_code}`, `Jugadores: ${ranking.length}`, `Partidos con resultado: ${finishedCount}/${matches.length}`]));
-  lines.push("");
-  lines.push(csvRow(["RANKING"]));
-  lines.push(csvRow(["Pos", "Jugador", "Puntos", "Exactos", "Ganador", "Empate"]));
-  ranking.forEach((r, i) => lines.push(csvRow([i + 1, r.display_name, r.total, r.exactos, r.ganador, r.empate])));
-  lines.push("");
-  lines.push(csvRow(["DETALLE DE PARTIDOS Y PREDICCIONES"]));
-  lines.push(csvRow(["#", "Fase", "Fecha", "Local", "Visitante", "Marcador", "Jugador", "Pred", "Pts"]));
-  for (const d of detail) {
-    lines.push(csvRow([d.matchNo, d.stage, d.fecha, d.local, d.visitante, d.marcador, d.jugador, d.pred, d.pts]));
-  }
-  const csv = lines.join("\n");
-  const safeName = pool.name.replace(/[^\w\-]+/g, "_").slice(0, 40) || "quiniela";
-  const fileName = `evidencia_${safeName}.csv`;
+  const players = ranking.map(r => ({ id: r.user_id, name: r.display_name }));
+  const stages = STAGE_ORDER
+    .filter(st => matches.some(m => m.stage === st))
+    .map(st => ({ key: st, label: STAGE_LABEL[st] ?? st }));
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100">
-      {/* Estilos de impresión: limpio para PDF */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -158,91 +128,15 @@ export default async function EvidenciaPage({ params }: { params: Promise<{ id: 
           </Link>
         </div>
 
-        <header className="print-text mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Evidencia de resultados</h1>
-            <p className="mt-1 text-sm text-slate-400 print-text">
-              {pool.name} · código {pool.invite_code} · {ranking.length} jugadores ·{" "}
-              {finishedCount}/{matches.length} partidos con resultado
-            </p>
-          </div>
-          <EvidenceExport csv={csv} fileName={fileName} />
-        </header>
-
-        {/* RANKING */}
-        <section className="print-card mb-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
-          <h2 className="print-text mb-3 text-lg font-semibold uppercase tracking-tight">Ranking final</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-slate-400 print-text">
-                <tr className="border-b border-slate-800">
-                  <th className="py-2 pr-3 font-normal">Pos</th>
-                  <th className="py-2 pr-3 font-normal">Jugador</th>
-                  <th className="py-2 pr-3 text-right font-normal">Pts</th>
-                  <th className="py-2 pr-3 text-right font-normal">Exactos</th>
-                  <th className="py-2 pr-3 text-right font-normal">Ganador</th>
-                  <th className="py-2 text-right font-normal">Empate</th>
-                </tr>
-              </thead>
-              <tbody className="print-text">
-                {ranking.map((r, i) => (
-                  <tr key={r.user_id} className={`border-b border-slate-800/50 ${r.user_id === user.id ? "bg-emerald-500/5" : ""}`}>
-                    <td className="py-1.5 pr-3 tabular-nums">{i + 1}</td>
-                    <td className="py-1.5 pr-3">{r.display_name}{r.user_id === user.id ? " (tú)" : ""}</td>
-                    <td className="py-1.5 pr-3 text-right font-semibold tabular-nums">{r.total}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums text-slate-400 print-text">{r.exactos}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums text-slate-400 print-text">{r.ganador}</td>
-                    <td className="py-1.5 text-right tabular-nums text-slate-400 print-text">{r.empate}</td>
-                  </tr>
-                ))}
-                {ranking.length === 0 && (
-                  <tr><td colSpan={6} className="py-3 text-center text-slate-500">Sin jugadores.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* DETALLE */}
-        <section className="print-card rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
-          <h2 className="print-text mb-1 text-lg font-semibold uppercase tracking-tight">Partidos y predicciones</h2>
-          <p className="no-print mb-3 text-xs text-slate-500">
-            Las predicciones de otros jugadores aparecen una vez que cierra la fase de cada partido.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-slate-400 print-text">
-                <tr className="border-b border-slate-800">
-                  <th className="py-2 pr-3 font-normal">#</th>
-                  <th className="py-2 pr-3 font-normal">Fase</th>
-                  <th className="py-2 pr-3 font-normal">Partido</th>
-                  <th className="py-2 pr-3 font-normal">Marcador</th>
-                  <th className="py-2 pr-3 font-normal">Jugador</th>
-                  <th className="py-2 pr-3 text-center font-normal">Pred</th>
-                  <th className="py-2 text-right font-normal">Pts</th>
-                </tr>
-              </thead>
-              <tbody className="print-text">
-                {detail.map((d, i) => (
-                  <tr key={i} className="border-b border-slate-800/40">
-                    <td className="py-1.5 pr-3 tabular-nums text-slate-400 print-text">{d.matchNo ?? ""}</td>
-                    <td className="py-1.5 pr-3 text-slate-400 print-text">{d.stage}</td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap">{d.local} <span className="text-slate-500">vs</span> {d.visitante}</td>
-                    <td className="py-1.5 pr-3 font-mono tabular-nums">{d.marcador}</td>
-                    <td className="py-1.5 pr-3">{d.predicted ? d.jugador : <span className="text-slate-500 italic">sin predicciones visibles</span>}</td>
-                    <td className="py-1.5 pr-3 text-center font-mono tabular-nums">{d.pred}</td>
-                    <td className={`py-1.5 text-right tabular-nums ${d.pts && d.pts > 0 ? "font-semibold text-emerald-400 print-text" : "text-slate-400 print-text"}`}>
-                      {d.predicted ? d.pts : ""}
-                    </td>
-                  </tr>
-                ))}
-                {detail.length === 0 && (
-                  <tr><td colSpan={7} className="py-3 text-center text-slate-500">Sin partidos.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <EvidenceView
+          pool={{ name: pool.name, invite_code: pool.invite_code }}
+          meta={{ totalMatches: matches.length, finishedCount }}
+          ranking={ranking}
+          detail={detail}
+          players={players}
+          stages={stages}
+          currentUserId={user.id}
+        />
 
         <p className="print-text mt-6 text-center text-xs text-slate-500">
           5 pts marcador exacto · 3 pts acertar ganador · 2 pts acertar empate · 0 si fallas.
