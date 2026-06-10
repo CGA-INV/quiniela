@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDate, timeUntil, buildStageLocks, stageLockMs, isStageOpen, GROUP_STAGE, PREDICTIONS_DEADLINE_ISO } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
-import { computeBracketTeams, isPlaceholderTeam } from "@/lib/bracket";
 import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
 import { isAdminEmail } from "@/lib/auth";
@@ -146,50 +145,9 @@ export default async function PoolDetailPage({
     ((ownPreds ?? []) as Prediction[]).map(p => [p.match_id, p]),
   );
 
-  // Bracket de PREDICCIÓN del jugador: a partir de SUS predicciones de grupos
-  // (y de cada fase eliminatoria), calcula qué equipos —según él— jugarían cada
-  // llave, para mostrarlos en vez de "por definir" y poder llenar hasta la final.
-  // Es solo ayuda visual: los puntos siguen siendo por marcador de cada partido.
-  const predTeams = (() => {
-    const sim = matchList.map(m => {
-      const p = predMap.get(m.id);
-      const isGroup = m.stage === "group";
-      return {
-        match_no: m.match_no,
-        id: m.id,
-        stage: m.stage,
-        group_label: m.group_label,
-        home_team: isGroup ? m.home_team : "Local por definir",
-        away_team: isGroup ? m.away_team : "Visitante por definir",
-        home_score: p ? p.pred_home : null,
-        away_score: p ? p.pred_away : null,
-        finished: false,
-        pen_winner: null as string | null,
-      };
-    });
-    for (let iter = 0; iter < 12; iter++) {
-      const desired = computeBracketTeams(sim);
-      let changed = false;
-      for (const sm of sim) {
-        if (sm.match_no == null || sm.stage === "group") continue;
-        const w = desired.get(sm.match_no);
-        if (w?.home && isPlaceholderTeam(sm.home_team)) { sm.home_team = w.home; changed = true; }
-        if (w?.away && isPlaceholderTeam(sm.away_team)) { sm.away_team = w.away; changed = true; }
-        // En empate de eliminatoria, para no bloquear el bracket, avanza el local.
-        if (sm.home_score != null && sm.home_score === sm.away_score && !sm.pen_winner
-            && !isPlaceholderTeam(sm.home_team)) {
-          sm.pen_winner = sm.home_team; changed = true;
-        }
-      }
-      if (!changed) break;
-    }
-    const map = new Map<string, { home: string; away: string }>();
-    for (const sm of sim) {
-      if (sm.stage === "group") continue;
-      map.set(sm.id, { home: sm.home_team, away: sm.away_team });
-    }
-    return map;
-  })();
+  // Los equipos de las llaves eliminatorias se van colocando con los RESULTADOS
+  // reales que cierra el admin (propagateBracket). Hasta entonces el partido
+  // muestra "Local/Visitante por definir".
 
   // RPC ya devuelve rows ordenados con stats + is_admin
   type RankingRow = {
@@ -483,11 +441,11 @@ export default async function PoolDetailPage({
 
                 {predOpen && (
                   <div className="mb-3 rounded-xl border border-slate-800 bg-slate-900/35 px-4 py-2.5 text-xs text-slate-400">
-                    💡 Llena los <strong className="text-slate-200">grupos</strong> y guarda: los{" "}
-                    <strong className="text-slate-200">32avos</strong> se rellenan solos con los equipos
-                    que —según tu pronóstico— clasificarían, y así fase por fase hasta la final.
-                    (En empate de eliminatoria avanza el equipo de la izquierda.)
-                    Puedes corregir cada fase eliminatoria hasta que arranque, y <strong className="text-slate-200">borrar</strong> cualquier predicción para dejarla sin definir.
+                    💡 Llena los <strong className="text-slate-200">grupos</strong> antes del cierre. Los equipos de las
+                    eliminatorias (<strong className="text-slate-200">32avos</strong>, octavos…) se van colocando
+                    conforme se cierran los partidos con su resultado real, y cada fase queda abierta para predecir
+                    hasta que arranca. Puedes <strong className="text-slate-200">borrar</strong> cualquier predicción
+                    para dejarla sin definir mientras su fase siga abierta.
                   </div>
                 )}
 
@@ -528,7 +486,6 @@ export default async function PoolDetailPage({
                     <ByStageGrid
                       matches={filteredMatches}
                       predMap={predMap}
-                      predTeams={predTeams}
                       poolId={id}
                       now={now}
                       stageLocks={stageLocks}
@@ -1105,14 +1062,12 @@ function GroupCard({ label, rows, hot }: { label: string; rows: StandingRow[]; h
 function ByStageGrid({
   matches,
   predMap,
-  predTeams,
   poolId,
   now,
   stageLocks,
 }: {
   matches: Match[];
   predMap: Map<string, Prediction>;
-  predTeams: Map<string, { home: string; away: string }>;
   poolId: string;
   now: number;
   stageLocks: Map<string, number>;
@@ -1137,7 +1092,6 @@ function ByStageGrid({
                 key={m.id}
                 match={m}
                 pred={predMap.get(m.id)}
-                predTeam={predTeams.get(m.id)}
                 poolId={poolId}
                 now={now}
                 stageLocks={stageLocks}
@@ -1185,26 +1139,20 @@ function FilterTab({
 function MatchCard({
   match: m,
   pred,
-  predTeam,
   now,
   poolId,
   stageLocks,
 }: {
   match: Match;
   pred?: Prediction;
-  predTeam?: { home: string; away: string };
   now: number;
   poolId: string;
   stageLocks: Map<string, number>;
 }) {
-  // Si el partido aún no tiene equipo real (eliminatorias antes del torneo),
-  // mostramos el equipo que el jugador predijo que jugaría esta llave.
-  const homeName = !isPlaceholderTeam(m.home_team)
-    ? m.home_team
-    : predTeam && !isPlaceholderTeam(predTeam.home) ? predTeam.home : m.home_team;
-  const awayName = !isPlaceholderTeam(m.away_team)
-    ? m.away_team
-    : predTeam && !isPlaceholderTeam(predTeam.away) ? predTeam.away : m.away_team;
+  // Los equipos los pone el admin con los resultados reales (propagateBracket).
+  // Mientras no estén, el partido muestra "Local/Visitante por definir".
+  const homeName = m.home_team;
+  const awayName = m.away_team;
   // Abierto/cierre por FASE: grupos fijo, eliminatorias al arrancar la fase.
   const open = isStageOpen(m.stage, stageLocks, now);
   const lockMs = stageLockMs(m.stage, stageLocks);
