@@ -577,6 +577,12 @@ export default async function PoolDetailPage({
                 </p>
                 <MyRankMovement poolId={id} rank={myRank} />
                 {shareText && <ShareButton text={shareText} />}
+                <Link
+                  href={`/pools/${id}/evidencia`}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-700"
+                >
+                  📄 Evidencia / resultados
+                </Link>
               </div>
 
               {ranking.length === 0 ? (
