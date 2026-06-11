@@ -31,6 +31,27 @@ type Match = {
 };
 type Pred = { user_id: string; match_id: string; pred_home: number; pred_away: number; points: number };
 
+/** Trae TODAS las predicciones de la sala paginando (PostgREST corta en 1000). */
+async function fetchAllPredictions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  poolId: string,
+): Promise<Pred[]> {
+  const pageSize = 1000;
+  const all: Pred[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("predictions")
+      .select("user_id, match_id, pred_home, pred_away, points")
+      .eq("pool_id", poolId)
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error || !data || data.length === 0) break;
+    all.push(...(data as Pred[]));
+    if (data.length < pageSize) break;
+  }
+  return all;
+}
+
 export default async function EvidenciaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [supabase, user] = await Promise.all([createClient(), getCachedUser()]);
@@ -44,7 +65,7 @@ export default async function EvidenciaPage({ params }: { params: Promise<{ id: 
     .single();
   if (poolErr || !pool) notFound();
 
-  const [{ data: matchesData }, { data: predsData }, { data: rankingData }] = await Promise.all([
+  const [{ data: matchesData }, predsData, { data: rankingData }] = await Promise.all([
     (pool.is_sandbox
       ? supabase.from("matches")
           .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, match_no")
@@ -53,8 +74,10 @@ export default async function EvidenciaPage({ params }: { params: Promise<{ id: 
           .select("id, stage, group_label, home_team, away_team, kickoff_at, home_score, away_score, finished, match_no")
           .is("pool_id", null)
     ).order("kickoff_at", { ascending: true }),
-    // RLS solo devuelve predicciones visibles (propias + de fases ya cerradas).
-    supabase.from("predictions").select("user_id, match_id, pred_home, pred_away, points").eq("pool_id", id),
+    // RLS solo devuelve predicciones visibles (propias + de fases ya cerradas;
+    // el admin ve todas). Paginamos porque PostgREST corta en 1000 filas y una
+    // sala puede tener miles de predicciones.
+    fetchAllPredictions(supabase, id),
     supabase.rpc("pool_ranking", { p_pool: id }),
   ]);
 
@@ -72,7 +95,7 @@ export default async function EvidenciaPage({ params }: { params: Promise<{ id: 
     return new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime();
   });
 
-  const preds = (predsData ?? []) as Pred[];
+  const preds = predsData;
   const predBy = new Map<string, Pred>(preds.map(p => [`${p.user_id}|${p.match_id}`, p]));
 
   const fin = (m: Match) => m.finished && m.home_score !== null && m.away_score !== null;
