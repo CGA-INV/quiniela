@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { buildStageLocks, isStageOpen, type StageMatch } from "@/lib/time";
+import { buildStageLocks, isStageOpen, poolGroupDeadlineMs, type StageMatch } from "@/lib/time";
 
 export async function saveAllPredictions(formData: FormData) {
   const poolId = String(formData.get("pool_id") ?? "");
@@ -33,6 +33,10 @@ export async function saveAllPredictions(formData: FormData) {
   const { data: poolRow } = await supabase
     .from("pools").select("is_sandbox").eq("id", poolId).maybeSingle();
   const isSandbox = !!(poolRow as { is_sandbox?: boolean } | null)?.is_sandbox;
+
+  // Cierre de grupos propio de la sala (tolerante si la columna aún no existe).
+  const { data: gdRow } = await supabase.from("pools").select("group_deadline").eq("id", poolId).maybeSingle();
+  const groupDeadlineMs = poolGroupDeadlineMs((gdRow as { group_deadline?: string | null } | null)?.group_deadline ?? null);
 
   const { data: allMatches } = await (isSandbox
     ? supabase.from("matches").select("id, stage, kickoff_at").eq("pool_id", poolId)
@@ -64,7 +68,7 @@ export async function saveAllPredictions(formData: FormData) {
     const bothEmpty = hRaw.trim() === "" && aRaw.trim() === "";
 
     const stage = stageById.get(matchId);
-    const open = stage !== undefined && isStageOpen(stage, stageLocks, now);
+    const open = stage !== undefined && isStageOpen(stage, stageLocks, now, groupDeadlineMs);
     if (!open) {
       // Solo cuenta como "bloqueado" si el usuario intentó poner/cambiar algo.
       if (!bothEmpty) lockedOut++;

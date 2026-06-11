@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDate, timeUntil, buildStageLocks, stageLockMs, isStageOpen, GROUP_STAGE, PREDICTIONS_DEADLINE_ISO } from "@/lib/time";
+import { fmtDate, fmtDateLong, timeUntil, buildStageLocks, stageLockMs, isStageOpen, GROUP_STAGE, poolGroupDeadlineMs } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
 import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
@@ -106,6 +106,11 @@ export default async function PoolDetailPage({
   const { data: waData } = await supabase.from("pools").select("whatsapp_url").eq("id", id).maybeSingle();
   const whatsappUrl = (waData as { whatsapp_url?: string | null } | null)?.whatsapp_url ?? null;
 
+  // Cierre de grupos propio de la sala (tolerante si la columna aún no existe).
+  const { data: gdData } = await supabase.from("pools").select("group_deadline").eq("id", id).maybeSingle();
+  const groupDeadlineMs = poolGroupDeadlineMs((gdData as { group_deadline?: string | null } | null)?.group_deadline ?? null);
+  const groupDeadlineIso = new Date(groupDeadlineMs).toISOString();
+
   // RPC pool_ranking agrega miembros + stats en server-side (1 query, mucho más rápido).
   const [{ data: matches }, { data: ownPreds }, { data: rankingData }, { data: payments }, priceVotesRes, paymentVotesRes] =
     await Promise.all([
@@ -198,14 +203,14 @@ export default async function PoolDetailPage({
     liveMatches.map(m => m.group_label).filter((g): g is string => !!g),
   );
 
-  // Cierre POR FASE: grupos = fecha fija; cada eliminatoria = kickoff del
-  // primer partido de la fase.
+  // Cierre POR FASE: grupos = cierre de la sala (o global); cada eliminatoria =
+  // kickoff del primer partido de la fase.
   const stageLocks = buildStageLocks(matchList);
-  const groupOpen = isStageOpen(GROUP_STAGE, stageLocks, now);
+  const groupOpen = isStageOpen(GROUP_STAGE, stageLocks, now, groupDeadlineMs);
 
   // Partidos por predecir (cuya fase sigue abierta) para el KPI
-  const openCount = matchList.filter(m => isStageOpen(m.stage, stageLocks, now)).length;
-  const predOpen = matchList.some(m => isStageOpen(m.stage, stageLocks, now));
+  const openCount = matchList.filter(m => isStageOpen(m.stage, stageLocks, now, groupDeadlineMs)).length;
+  const predOpen = matchList.some(m => isStageOpen(m.stage, stageLocks, now, groupDeadlineMs));
 
   // Conteo por fase y filtro por fase
   const stageCounts: Record<string, number> = { all: matchList.length };
@@ -215,9 +220,9 @@ export default async function PoolDetailPage({
   const filteredMatches = filter === "all" ? matchList : matchList.filter(m => m.stage === filter);
 
   // Próximo partido para predecir (de una fase aún abierta)
-  const nextOpen = matchList.find(m => isStageOpen(m.stage, stageLocks, now));
+  const nextOpen = matchList.find(m => isStageOpen(m.stage, stageLocks, now, groupDeadlineMs));
   const visibleOpenMatches = filteredMatches.filter(
-    m => isStageOpen(m.stage, stageLocks, now),
+    m => isStageOpen(m.stage, stageLocks, now, groupDeadlineMs),
   ).length;
 
   // Encuestas (graceful si las tablas aún no existen)
@@ -378,7 +383,7 @@ export default async function PoolDetailPage({
               <Stat
                 label="Próximo partido"
                 value={nextOpen ? `${nextOpen.home_team} vs ${nextOpen.away_team}` : "—"}
-                sub={nextOpen ? `cierra ${timeUntil(new Date(stageLockMs(nextOpen.stage, stageLocks)).toISOString(), now)}` : "no hay próximos"}
+                sub={nextOpen ? `cierra ${timeUntil(new Date(stageLockMs(nextOpen.stage, stageLocks, groupDeadlineMs)).toISOString(), now)}` : "no hay próximos"}
                 accent="amber"
                 compact
               />
@@ -431,7 +436,7 @@ export default async function PoolDetailPage({
 
                 <div className={`mb-3 rounded-xl border px-4 py-2.5 text-sm ${predOpen ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
                   {groupOpen ? (
-                    <>⏰ <strong>Grupos</strong> cierran 10 jun, 11:59 PM (hora VE) · cierra {timeUntil(PREDICTIONS_DEADLINE_ISO, now)}. Cada fase eliminatoria cierra cuando arranca.</>
+                    <>⏰ <strong>Grupos</strong> cierran {fmtDate(groupDeadlineIso)} (hora VE) · cierra {timeUntil(groupDeadlineIso, now)}. Cada fase eliminatoria cierra cuando arranca.</>
                   ) : predOpen ? (
                     <>⏰ Grupos cerrados. Cada fase eliminatoria cierra cuando arranca — aún puedes llenar y editar las fases que no han comenzado.</>
                   ) : (
@@ -489,6 +494,7 @@ export default async function PoolDetailPage({
                       poolId={id}
                       now={now}
                       stageLocks={stageLocks}
+                      groupDeadlineMs={groupDeadlineMs}
                     />
                   )}
 
@@ -513,7 +519,7 @@ export default async function PoolDetailPage({
               <div className="space-y-3">
                 <RuleCard icon="⏰" title="Cierre por fase">
                   La <strong className="text-slate-100">fase de grupos</strong> cierra el{" "}
-                  <strong className="text-slate-100">martes 10 de junio de 2026, 11:59 PM (hora de Venezuela)</strong>.
+                  <strong className="text-slate-100">{fmtDateLong(groupDeadlineIso)} (hora de Venezuela)</strong>.
                   Cada <strong className="text-slate-100">fase eliminatoria</strong> (32avos, octavos, cuartos,
                   semis, 3er puesto y final) cierra cuando <strong className="text-slate-100">arranca esa fase</strong>:
                   hasta entonces puedes llenarla, corregirla o borrar predicciones para dejarlas sin definir.
@@ -1071,12 +1077,14 @@ function ByStageGrid({
   poolId,
   now,
   stageLocks,
+  groupDeadlineMs,
 }: {
   matches: Match[];
   predMap: Map<string, Prediction>;
   poolId: string;
   now: number;
   stageLocks: Map<string, number>;
+  groupDeadlineMs: number;
 }) {
   const byStage = new Map<string, Match[]>();
   for (const m of matches) {
@@ -1101,6 +1109,7 @@ function ByStageGrid({
                 poolId={poolId}
                 now={now}
                 stageLocks={stageLocks}
+                groupDeadlineMs={groupDeadlineMs}
               />
             ))}
           </ul>
@@ -1148,20 +1157,22 @@ function MatchCard({
   now,
   poolId,
   stageLocks,
+  groupDeadlineMs,
 }: {
   match: Match;
   pred?: Prediction;
   now: number;
   poolId: string;
   stageLocks: Map<string, number>;
+  groupDeadlineMs: number;
 }) {
   // Los equipos los pone el admin con los resultados reales (propagateBracket).
   // Mientras no estén, el partido muestra "Local/Visitante por definir".
   const homeName = m.home_team;
   const awayName = m.away_team;
-  // Abierto/cierre por FASE: grupos fijo, eliminatorias al arrancar la fase.
-  const open = isStageOpen(m.stage, stageLocks, now);
-  const lockMs = stageLockMs(m.stage, stageLocks);
+  // Abierto/cierre por FASE: grupos = cierre de la sala, eliminatorias al arrancar.
+  const open = isStageOpen(m.stage, stageLocks, now, groupDeadlineMs);
+  const lockMs = stageLockMs(m.stage, stageLocks, groupDeadlineMs);
   const lockIso = new Date(lockMs).toISOString();
   const kickoffMs = new Date(m.kickoff_at).getTime();
   const started = now >= kickoffMs;

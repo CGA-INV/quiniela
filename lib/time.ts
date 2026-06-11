@@ -33,15 +33,29 @@ export function buildStageLocks(matches: StageMatch[]): Map<string, number> {
   return locks;
 }
 
-/** Instante (ms) en que cierran las predicciones de una fase. */
-export function stageLockMs(stage: string, locks: Map<string, number>): number {
-  if (stage === GROUP_STAGE) return DEADLINE_MS;
+/** Cierre de grupos efectivo de una sala: su `group_deadline` si lo tiene,
+ *  o el cierre global por defecto. */
+export function poolGroupDeadlineMs(groupDeadlineIso?: string | null): number {
+  if (!groupDeadlineIso) return DEADLINE_MS;
+  const t = new Date(groupDeadlineIso).getTime();
+  return Number.isFinite(t) ? t : DEADLINE_MS;
+}
+
+/** Instante (ms) en que cierran las predicciones de una fase. `groupDeadlineMs`
+ *  permite un cierre de grupos por sala (default = cierre global). */
+export function stageLockMs(stage: string, locks: Map<string, number>, groupDeadlineMs = DEADLINE_MS): number {
+  if (stage === GROUP_STAGE) return groupDeadlineMs;
   return locks.get(stage) ?? DEADLINE_MS;
 }
 
 /** ¿Sigue abierta esta fase para predecir/editar/borrar? */
-export function isStageOpen(stage: string, locks: Map<string, number>, now = Date.now()): boolean {
-  return now < stageLockMs(stage, locks);
+export function isStageOpen(
+  stage: string,
+  locks: Map<string, number>,
+  now = Date.now(),
+  groupDeadlineMs = DEADLINE_MS,
+): boolean {
+  return now < stageLockMs(stage, locks, groupDeadlineMs);
 }
 
 export function fmtDate(iso: string): string {

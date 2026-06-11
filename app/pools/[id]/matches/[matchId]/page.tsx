@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateLong, buildStageLocks, isStageOpen, type StageMatch } from "@/lib/time";
+import { fmtDateLong, buildStageLocks, isStageOpen, poolGroupDeadlineMs, type StageMatch } from "@/lib/time";
 import { Flag } from "@/components/Flag";
 import { getCachedUser } from "@/lib/admin-context";
 import { ScreenBackground } from "@/components/ScreenBackground";
@@ -71,7 +71,10 @@ export default async function MatchDetailPage({
     ? supabase.from("matches").select("stage, kickoff_at").eq("stage", m.stage).eq("pool_id", m.pool_id)
     : supabase.from("matches").select("stage, kickoff_at").eq("stage", m.stage).is("pool_id", null));
   const stageLocks = buildStageLocks((phaseMatches ?? []) as StageMatch[]);
-  if (isStageOpen(m.stage, stageLocks)) {
+  // Cierre de grupos propio de la sala (tolerante si la columna aún no existe).
+  const { data: gdRow } = await supabase.from("pools").select("group_deadline").eq("id", poolId).maybeSingle();
+  const groupDeadlineMs = poolGroupDeadlineMs((gdRow as { group_deadline?: string | null } | null)?.group_deadline ?? null);
+  if (isStageOpen(m.stage, stageLocks, undefined, groupDeadlineMs)) {
     redirect(`/pools/${poolId}?error=Las%20predicciones%20se%20ven%20al%20cerrar%20la%20fase`);
   }
 
