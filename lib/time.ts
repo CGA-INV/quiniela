@@ -41,6 +41,18 @@ export function poolGroupDeadlineMs(groupDeadlineIso?: string | null): number {
   return Number.isFinite(t) ? t : DEADLINE_MS;
 }
 
+/** Cierre de grupos efectivo para UN usuario: el de la sala, extendido por un
+ *  override por usuario (excepción) si lo tiene. Solo extiende (nunca acorta). */
+export function effectiveGroupDeadlineMs(
+  poolGroupDeadlineIso?: string | null,
+  userOverrideIso?: string | null,
+): number {
+  const base = poolGroupDeadlineMs(poolGroupDeadlineIso);
+  if (!userOverrideIso) return base;
+  const ov = new Date(userOverrideIso).getTime();
+  return Number.isFinite(ov) ? Math.max(base, ov) : base;
+}
+
 /** Instante (ms) en que cierran las predicciones de una fase. `groupDeadlineMs`
  *  permite un cierre de grupos por sala (default = cierre global). */
 export function stageLockMs(stage: string, locks: Map<string, number>, groupDeadlineMs = DEADLINE_MS): number {

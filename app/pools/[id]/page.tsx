@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDate, fmtDateLong, timeUntil, buildStageLocks, stageLockMs, isStageOpen, GROUP_STAGE, poolGroupDeadlineMs } from "@/lib/time";
+import { fmtDate, fmtDateLong, timeUntil, buildStageLocks, stageLockMs, isStageOpen, GROUP_STAGE, effectiveGroupDeadlineMs } from "@/lib/time";
 import { buildStandings, type StandingRow } from "@/lib/standings";
 import { computePoolWinner } from "@/lib/winner";
 import { Flag } from "@/components/Flag";
@@ -106,9 +106,16 @@ export default async function PoolDetailPage({
   const { data: waData } = await supabase.from("pools").select("whatsapp_url").eq("id", id).maybeSingle();
   const whatsappUrl = (waData as { whatsapp_url?: string | null } | null)?.whatsapp_url ?? null;
 
-  // Cierre de grupos propio de la sala (tolerante si la columna aún no existe).
-  const { data: gdData } = await supabase.from("pools").select("group_deadline").eq("id", id).maybeSingle();
-  const groupDeadlineMs = poolGroupDeadlineMs((gdData as { group_deadline?: string | null } | null)?.group_deadline ?? null);
+  // Cierre de grupos: el de la sala, extendido por un override por usuario
+  // (excepción). Tolerante si las columnas aún no existen.
+  const [{ data: gdData }, { data: ovData }] = await Promise.all([
+    supabase.from("pools").select("group_deadline").eq("id", id).maybeSingle(),
+    supabase.from("profiles").select("group_deadline_override").eq("id", user.id).maybeSingle(),
+  ]);
+  const groupDeadlineMs = effectiveGroupDeadlineMs(
+    (gdData as { group_deadline?: string | null } | null)?.group_deadline ?? null,
+    (ovData as { group_deadline_override?: string | null } | null)?.group_deadline_override ?? null,
+  );
   const groupDeadlineIso = new Date(groupDeadlineMs).toISOString();
 
   // RPC pool_ranking agrega miembros + stats en server-side (1 query, mucho más rápido).

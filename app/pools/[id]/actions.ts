@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { buildStageLocks, isStageOpen, poolGroupDeadlineMs, type StageMatch } from "@/lib/time";
+import { buildStageLocks, isStageOpen, effectiveGroupDeadlineMs, type StageMatch } from "@/lib/time";
 
 export async function saveAllPredictions(formData: FormData) {
   const poolId = String(formData.get("pool_id") ?? "");
@@ -34,9 +34,16 @@ export async function saveAllPredictions(formData: FormData) {
     .from("pools").select("is_sandbox").eq("id", poolId).maybeSingle();
   const isSandbox = !!(poolRow as { is_sandbox?: boolean } | null)?.is_sandbox;
 
-  // Cierre de grupos propio de la sala (tolerante si la columna aún no existe).
-  const { data: gdRow } = await supabase.from("pools").select("group_deadline").eq("id", poolId).maybeSingle();
-  const groupDeadlineMs = poolGroupDeadlineMs((gdRow as { group_deadline?: string | null } | null)?.group_deadline ?? null);
+  // Cierre de grupos: el de la sala extendido por el override del usuario
+  // (excepción). Tolerante si las columnas aún no existen.
+  const [{ data: gdRow }, { data: ovRow }] = await Promise.all([
+    supabase.from("pools").select("group_deadline").eq("id", poolId).maybeSingle(),
+    supabase.from("profiles").select("group_deadline_override").eq("id", user.id).maybeSingle(),
+  ]);
+  const groupDeadlineMs = effectiveGroupDeadlineMs(
+    (gdRow as { group_deadline?: string | null } | null)?.group_deadline ?? null,
+    (ovRow as { group_deadline_override?: string | null } | null)?.group_deadline_override ?? null,
+  );
 
   const { data: allMatches } = await (isSandbox
     ? supabase.from("matches").select("id, stage, kickoff_at").eq("pool_id", poolId)
